@@ -1,10 +1,14 @@
-// Lightweight i18n for v2. Same translation-key idea as v1's i18n.js, but
-// React-friendly: a hook + a TS-typed `t(key)` function.
-//
-// Add new keys to BOTH `en` and `da` below. Danish strings marked TODO
-// need native-speaker review.
+// Lightweight i18n for v2. React-Context based so a single language
+// change in any component re-renders ALL consumers.
 
-import { useCallback, useEffect, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react'
 
 export type Lang = 'en' | 'da'
 
@@ -57,6 +61,19 @@ const T = {
 
     loading: 'Loading…',
     error_loading: 'Could not load data. Is the server reachable?',
+    no_airlocks: 'No airlocks connected yet.',
+    no_airlocks_sub:
+      'Power on a Plaato Airlock and configure it to point at this server. It will appear here once the first data packet arrives.',
+    show_demo: 'View example data instead',
+
+    demo_badge: 'Demo mode — synthetic data',
+    demo_show: 'Show example data',
+    demo_hide: 'Showing demo · click for real',
+
+    readings_in: '{count} readings in last {range}',
+    stable: 'stable',
+    from_1h_avg: 'from 1h avg',
+    in_last_24h: 'in last 24h',
   },
   da: {
     brand_name: 'Pers Bryggeri',
@@ -104,17 +121,38 @@ const T = {
 
     loading: 'Indlæser…',
     error_loading: 'Kunne ikke indlæse data. Kan serveren nås?',
+    no_airlocks: 'Ingen gærlåse er forbundet endnu.',
+    no_airlocks_sub:
+      'Tænd for en Plaato-gærlås og konfigurer den til at pege på denne server. Den vil dukke op her, så snart første datapakke ankommer.',
+    show_demo: 'Vis eksempeldata i stedet',
+
+    demo_badge: 'Demo-tilstand — syntetiske data',
+    demo_show: 'Vis eksempeldata',
+    demo_hide: 'Viser demo · klik for at se rigtige data',
+
+    readings_in: '{count} aflæsninger i sidste {range}',
+    stable: 'stabil',
+    from_1h_avg: 'fra 1t-gennemsnit',
+    in_last_24h: 'sidste 24 timer',
   },
 } as const
 
 export type Key = keyof typeof T.en
+
+type I18nValue = {
+  lang: Lang
+  setLang: (lang: Lang) => void
+  t: (key: Key, vars?: Record<string, string | number>) => string
+}
+
+const I18nContext = createContext<I18nValue | null>(null)
 
 function readStored(): Lang {
   const v = localStorage.getItem(STORAGE_KEY)
   return v === 'da' ? 'da' : 'en'
 }
 
-export function useI18n() {
+export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>(() => readStored())
 
   useEffect(() => {
@@ -131,5 +169,11 @@ export function useI18n() {
     [lang],
   )
 
-  return { lang, setLang, t }
+  return <I18nContext.Provider value={{ lang, setLang, t }}>{children}</I18nContext.Provider>
+}
+
+export function useI18n(): I18nValue {
+  const v = useContext(I18nContext)
+  if (!v) throw new Error('useI18n must be used within an I18nProvider')
+  return v
 }

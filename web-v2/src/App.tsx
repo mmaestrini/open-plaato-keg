@@ -3,13 +3,18 @@ import { Header } from './components/Header'
 import { AirlockDetail } from './pages/AirlockDetail'
 import { api, Airlock } from './lib/api'
 import { useI18n } from './lib/i18n'
-import { useDemoMode } from './lib/demo'
+import { useDemoMode, DEMO_AIRLOCK_ID } from './lib/demo'
 
-// ──────────────────────────────────────────────────────────
-// MVP routing: read the first airlock's id from /api/airlocks
-// and render the detail page. When we add React Router we'll
-// support /v2/airlocks/:id explicitly.
-// ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────
+// Stable-id routing for v2 MVP:
+//
+//   - On mount, fetch real airlocks (regardless of demo state) so that
+//     toggling demo off doesn't need to wait for a fetch.
+//   - The "active" airlock id is derived from demo + real airlocks.
+//   - Pass it to AirlockDetail with a `key` so React fully unmounts /
+//     remounts when the id changes — no stale state, no in-flight fetch
+//     against the wrong id.
+// ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const { t } = useI18n()
@@ -18,30 +23,32 @@ export default function App() {
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    if (demo) {
-      // In demo mode we don't need real airlocks at all
-      setAirlocks([])
-      return
-    }
-    api.airlocks()
-      .then(setAirlocks)
+    api
+      .airlocks()
+      .then((a) => {
+        setAirlocks(a)
+        setErr(null)
+      })
       .catch((e) => setErr(String(e)))
-  }, [demo])
+  }, [])
 
-  // Demo mode: render the demo detail page regardless of real airlock state
-  if (demo) {
-    return (
-      <>
-        <Header />
-        <AirlockDetail airlockId="demo-airlock-0000000000000000000000000000" />
-      </>
-    )
-  }
+  const activeAirlockId = demo
+    ? DEMO_AIRLOCK_ID
+    : airlocks && airlocks.length > 0
+    ? airlocks[0].id
+    : undefined
 
   return (
     <>
       <Header />
-      {err && (
+
+      {/* Demo mode → always render demo detail (no real fetch needed) */}
+      {demo && activeAirlockId && (
+        <AirlockDetail key={activeAirlockId} airlockId={activeAirlockId} />
+      )}
+
+      {/* Real mode + error fetching airlocks */}
+      {!demo && err && (
         <main className="container-pers py-10">
           <div className="card-pers text-center">
             <p className="font-serif text-lg">{t('error_loading')}</p>
@@ -49,29 +56,32 @@ export default function App() {
           </div>
         </main>
       )}
-      {!err && !airlocks && (
+
+      {/* Real mode + still loading */}
+      {!demo && !err && !airlocks && (
         <main className="container-pers py-10">
           <p className="text-center italic text-text-muted">{t('loading')}</p>
         </main>
       )}
-      {!err && airlocks && airlocks.length === 0 && (
+
+      {/* Real mode + no airlocks at all */}
+      {!demo && !err && airlocks && airlocks.length === 0 && (
         <main className="container-pers py-10">
           <div className="card-pers text-center">
-            <p className="font-serif text-lg">No airlocks connected yet.</p>
-            <p className="mt-2 text-sm italic text-text-muted">
-              Power on a Plaato Airlock and configure it to point at this server. It will appear here once the first data packet arrives.
+            <p className="font-serif text-lg">{t('no_airlocks')}</p>
+            <p className="mx-auto mt-2 max-w-prose text-sm italic text-text-muted">
+              {t('no_airlocks_sub')}
             </p>
-            <button
-              onClick={() => setDemo(true)}
-              className="btn-primary-pers mt-5"
-            >
-              View example data instead
+            <button onClick={() => setDemo(true)} className="btn-primary-pers mt-5">
+              {t('show_demo')}
             </button>
           </div>
         </main>
       )}
-      {!err && airlocks && airlocks.length > 0 && (
-        <AirlockDetail airlockId={airlocks[0].id} />
+
+      {/* Real mode + airlocks present */}
+      {!demo && !err && activeAirlockId && (
+        <AirlockDetail key={activeAirlockId} airlockId={activeAirlockId} />
       )}
     </>
   )

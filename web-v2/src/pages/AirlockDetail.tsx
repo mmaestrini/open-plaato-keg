@@ -75,13 +75,13 @@ export function AirlockDetail({ airlockId }: Props) {
           {label}
         </h1>
         <p className="mx-auto mt-2 max-w-prose text-sm italic text-text-muted">
-          {airlock.id.slice(0, 8)}… · {history.length} readings in last {range}
+          {airlock.id.slice(0, 8)}… · {t('readings_in', { count: history.length, range })}
         </p>
         <StatusPill kind={status} label={t(`page_status_${status}` as const)} />
         {demo && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-warn/40 bg-warn/[0.10] px-3 py-1 font-mono text-[0.65rem] uppercase tracking-widest text-warn">
             <span className="h-1.5 w-1.5 rounded-full bg-warn" />
-            Demo mode — synthetic data
+            {t('demo_badge')}
           </div>
         )}
       </section>
@@ -92,12 +92,10 @@ export function AirlockDetail({ airlockId }: Props) {
           label={t('kpi_total_bubbles')}
           unit={t('kpi_total_bubbles_sub')}
           value={airlock.total_bubble_count ?? '—'}
-          delta={stats.last24h ? `↑ ${stats.last24h} ${lang === 'da' ? 'sidste 24 timer' : 'in last 24h'}` : undefined}
+          delta={stats.last24h ? `↑ ${stats.last24h} ${t('in_last_24h')}` : undefined}
           deltaKind="up"
           extra={
-            <button className="btn-pers mt-3 text-xs">
-              {t('reset_counter')}
-            </button>
+            <button className="btn-pers mt-3 text-xs">{t('reset_counter')}</button>
           }
         />
         <KpiCard
@@ -106,9 +104,7 @@ export function AirlockDetail({ airlockId }: Props) {
           value={airlock.bubbles_per_min ?? '0.0'}
           delta={
             stats.bpmDelta != null
-              ? `${stats.bpmDelta >= 0 ? '↑' : '↓'} ${Math.abs(stats.bpmDelta).toFixed(1)} ${
-                  lang === 'da' ? 'fra 1t gennemsnit' : 'from 1h avg'
-                }`
+              ? `${stats.bpmDelta >= 0 ? '↑' : '↓'} ${Math.abs(stats.bpmDelta).toFixed(1)} ${t('from_1h_avg')}`
               : undefined
           }
           deltaKind={stats.bpmDelta != null && stats.bpmDelta >= 0 ? 'up' : 'down'}
@@ -117,7 +113,7 @@ export function AirlockDetail({ airlockId }: Props) {
           label={t('kpi_temperature')}
           unit="°C"
           value={airlock.temperature ?? '—'}
-          delta={lang === 'da' ? 'stabil' : 'stable'}
+          delta={t('stable')}
         />
       </section>
 
@@ -137,7 +133,7 @@ export function AirlockDetail({ airlockId }: Props) {
                   : 'border-border text-text-muted hover:text-text hover:bg-bg-card-h'
               }`}
             >
-              {demo ? 'Showing demo · click for real' : 'Show example data'}
+              {demo ? t('demo_hide') : t('demo_show')}
             </button>
             <RangeSegment range={range} onChange={setRange} t={t} />
           </div>
