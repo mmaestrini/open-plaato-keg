@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import { api, Airlock, LogEntry, Range, openWS } from '../lib/api'
 import { useI18n } from '../lib/i18n'
+import { useDemoMode, mockHistory, mockAirlock } from '../lib/demo'
 
 type Props = {
   airlockId: string
@@ -17,15 +18,23 @@ type Props = {
 
 export function AirlockDetail({ airlockId }: Props) {
   const { t, lang } = useI18n()
+  const { demo, toggle: toggleDemo } = useDemoMode()
   const [airlock, setAirlock] = useState<Airlock | null>(null)
   const [range, setRange] = useState<Range>('3d')
   const [history, setHistory] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
-  // Initial load
+  // Initial load (real API, or synthetic when in demo mode)
   useEffect(() => {
     setLoading(true)
+    if (demo) {
+      setAirlock(mockAirlock(airlockId))
+      setHistory(mockHistory(range))
+      setErr(null)
+      setLoading(false)
+      return
+    }
     Promise.all([api.airlock(airlockId), api.airlockHistory(airlockId, range)])
       .then(([a, h]) => {
         setAirlock(a)
@@ -34,17 +43,18 @@ export function AirlockDetail({ airlockId }: Props) {
       })
       .catch((e) => setErr(String(e)))
       .finally(() => setLoading(false))
-  }, [airlockId, range])
+  }, [airlockId, range, demo])
 
-  // Live WebSocket updates (just update current values; history is polled via range)
+  // Live WebSocket updates (real mode only; demo data is static)
   useEffect(() => {
+    if (demo) return
     const ws = openWS((msg) => {
       if (msg.type === 'airlock' && msg.data?.id === airlockId) {
         setAirlock((a) => ({ ...(a ?? { id: airlockId }), ...msg.data }))
       }
     })
     return () => ws.close()
-  }, [airlockId])
+  }, [airlockId, demo])
 
   const stats = useMemo(() => deriveStats(history), [history])
 
@@ -63,12 +73,16 @@ export function AirlockDetail({ airlockId }: Props) {
         <h1 className="font-serif text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
           {label}
         </h1>
-        {airlock.last_bubble_count && (
-          <p className="mx-auto mt-2 max-w-prose text-sm italic text-text-muted">
-            {airlock.id.slice(0, 8)}… · {history.length} readings in last {range}
-          </p>
-        )}
+        <p className="mx-auto mt-2 max-w-prose text-sm italic text-text-muted">
+          {airlock.id.slice(0, 8)}… · {history.length} readings in last {range}
+        </p>
         <StatusPill kind={status} label={t(`page_status_${status}` as const)} />
+        {demo && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-warn/40 bg-warn/[0.10] px-3 py-1 font-mono text-[0.65rem] uppercase tracking-widest text-warn">
+            <span className="h-1.5 w-1.5 rounded-full bg-warn" />
+            Demo mode — synthetic data
+          </div>
+        )}
       </section>
 
       {/* ── KPIs ─────────────────────────────────────────── */}
@@ -113,7 +127,19 @@ export function AirlockDetail({ airlockId }: Props) {
             <h2 className="font-serif text-lg font-semibold">{t('chart_title')}</h2>
             <p className="mt-0.5 text-sm italic text-text-muted">{t('chart_subtitle')}</p>
           </div>
-          <RangeSegment range={range} onChange={setRange} t={t} />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleDemo}
+              className={`rounded-full border px-3 py-1.5 font-serif text-xs font-medium tracking-wide transition-colors ${
+                demo
+                  ? 'border-warn/50 bg-warn/[0.10] text-warn hover:bg-warn/[0.16]'
+                  : 'border-border text-text-muted hover:text-text hover:bg-bg-card-h'
+              }`}
+            >
+              {demo ? 'Showing demo · click for real' : 'Show example data'}
+            </button>
+            <RangeSegment range={range} onChange={setRange} t={t} />
+          </div>
         </header>
         <div className="h-72">
           <ChartArea history={history} />
