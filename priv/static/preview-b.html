@@ -373,6 +373,8 @@
     .switch {
       width: 36px;
       height: 20px;
+      min-width: 36px;
+      flex-shrink: 0;
       background: var(--border-strong);
       border-radius: 999px;
       position: relative;
@@ -447,7 +449,8 @@
 
     /* ─── Mobile ──────────────────────────────────── */
     @media (max-width: 800px) {
-      .topbar-inner { height: auto; padding: 0.6rem 0; flex-wrap: wrap; gap: 0.5rem; }
+      .container { padding: 0 1.5rem; }
+      .topbar-inner { height: auto; padding: 0.7rem 0; flex-wrap: wrap; gap: 0.5rem; }
       .nav { flex: 1 1 100%; order: 3; justify-content: flex-start; overflow-x: auto; }
       .topbar-actions { margin-left: auto; }
       .page-title { font-size: 1.4rem; }
