@@ -79,17 +79,20 @@
 
     da: {
       // ── Navigation ──────────────────────────────────────────────────
+      // NOTE: Danish strings still need review by a native speaker /
+      // domain expert (your father-in-law). Mark anything that reads
+      // awkwardly with a TODO so we can find it later.
       nav_home: 'Hjem',
       nav_kegs: 'Fustager',
       nav_history: 'Historik',
       nav_configure: 'Indstillinger',
       nav_configure_arrow: 'Indstillinger ▾',
-      nav_tap_setup: 'Hane-opsætning',
+      nav_tap_setup: 'Hanekonfiguration',
       nav_tap_handles: 'Hanegreb',
-      nav_scale_setup: 'Vægt-opsætning',
-      nav_dashboard_setup: 'Dashboard-opsætning',
-      nav_server_update: 'Server-opdatering',
-      nav_airlock_setup: 'Gærlås-opsætning',
+      nav_scale_setup: 'Vægtkonfiguration',
+      nav_dashboard_setup: 'Dashboardkonfiguration',
+      nav_server_update: 'Serveropdatering',
+      nav_airlock_setup: 'Gærlåskonfiguration',
       nav_transfer_scales: 'Overfør vægte',
       nav_beverages: 'Drikkevarer',
 
@@ -98,26 +101,26 @@
       taplist_subtitle: 'Open Plaato',
       taplist_loading: 'Indlæser haner…',
       taplist_no_taps_html:
-        'Ingen haner konfigureret endnu. Besøg <a href="/taplist-setup.html">Hane-opsætning</a> for at tilføje haner.',
-      taplist_load_error: 'Kunne ikke indlæse hane-data. Kører serveren?',
+        'Der er endnu ikke konfigureret nogen haner. Gå til <a href="/taplist-setup.html">Hanekonfiguration</a> for at tilføje haner.',
+      taplist_load_error: 'Kunne ikke indlæse data. Kører serveren?',
       taplist_no_sensor: 'Ingen sensor tilknyttet',
-      taplist_sensor_offline: 'Sensor offline', // TODO: review
-      taplist_tap_count_one: '1 hane aktiv',
-      taplist_tap_count_other: '{n} haner aktive',
+      taplist_sensor_offline: 'Sensor offline',
+      taplist_tap_count_one: '1 aktiv hane',
+      taplist_tap_count_other: '{n} aktive haner',
       taplist_tap_label: 'HANE {n}',
       taplist_pouring: '● SKÆNKER',
       taplist_now_pouring: '● SKÆNKER NU',
       taplist_unnamed_beer: 'Unavngivet øl',
 
       // ── Airlock page ────────────────────────────────────────────────
-      airlock_title: 'Gærlås-opsætning',
-      airlock_subtitle: 'Konfigurér Plaato gærlåse — navne, Grainfather og Brewfather integration.',
-      airlock_support: 'Gærlås-understøttelse',
-      airlock_support_help: 'Aktivér eller deaktivér behandling af Plaato gærlås-enheder på denne server.',
+      airlock_title: 'Gærlåskonfiguration',
+      airlock_subtitle: 'Konfigurer Plaato-gærlåse — navne samt Grainfather- og Brewfather-integration.',
+      airlock_support: 'Gærlåsunderstøttelse',
+      airlock_support_help: 'Aktiver eller deaktiver behandling af Plaato-gærlåsenheder på denne server.',
       airlock_enabled: 'Aktiveret',
       airlock_disabled: 'Deaktiveret',
       airlock_device_settings: 'Enhedsindstillinger',
-      airlock_select_help: 'Vælg en gærlås for at konfigurere navn og integrationsindstillinger. Gærlåse vises når de har sendt data til serveren.',
+      airlock_select_help: 'Vælg en gærlås for at konfigurere navn og integrationsindstillinger. Gærlåse vises, når de har sendt data til serveren.',
       airlock_select_label: 'Vælg gærlås',
       airlock_select_placeholder: 'Vælg en gærlås…',
       airlock_label: 'Navn',
@@ -126,8 +129,8 @@
       airlock_temperature: 'Temperatur',
       airlock_bubbles_per_min: 'Bobler / min',
       airlock_total_bubbles: 'Bobler i alt',
-      airlock_reset_bubbles: 'Nulstil boble-tæller',
-      airlock_reset_confirm: 'Nulstil boble-tælleren for denne gærlås?',
+      airlock_reset_bubbles: 'Nulstil bobletæller',
+      airlock_reset_confirm: 'Nulstil bobletælleren for denne gærlås?',
     },
   };
 

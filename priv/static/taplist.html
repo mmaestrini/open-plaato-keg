@@ -343,6 +343,63 @@
       border-color: var(--gold);
       color: var(--bg);
     }
+
+    /* ─── Mobile responsive (≤700px) ─────────────── */
+    @media (max-width: 700px) {
+      .taplist-header {
+        flex-wrap: wrap;
+        padding: 0.6rem 0.8rem;
+        gap: 0.5rem 0.75rem;
+      }
+      .header-brand { flex: 1 1 60%; min-width: 0; }
+      .header-title { font-size: 1.1rem; letter-spacing: 0.04em; }
+      .header-subtitle { font-size: 0.55rem; letter-spacing: 0.1em; }
+      .header-icon { font-size: 1.3rem; }
+
+      /* Right block: clock + count */
+      .taplist-header > div:nth-child(2) {
+        flex: 0 0 auto;
+        text-align: right;
+      }
+      #live-clock { font-size: 0.95rem; }
+      #tap-count { font-size: 0.7rem; }
+
+      /* Nav: full row, wraps */
+      .header-nav {
+        flex: 1 1 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+        justify-content: flex-end;
+        margin-top: 0.25rem;
+      }
+      .header-nav > a,
+      .nav-dropdown-toggle {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.55rem;
+      }
+      .lang-toggle { margin-left: auto; }
+      .lang-toggle button { font-size: 1rem; padding: 0.3rem 0.5rem; }
+
+      /* Empty / loading state should not get cut off */
+      main { padding: 0 1rem; }
+      .no-taps, .loading-state p { font-size: 0.95rem; text-align: center; }
+
+      /* Cards: full width single column */
+      .tap-list { grid-template-columns: 1fr !important; gap: 0.75rem !important; padding: 0.75rem !important; }
+      .tap-card { flex-direction: column; min-height: auto; }
+      .card-handle { padding: 1rem 0.5rem !important; }
+      .card-info { padding: 1rem !important; }
+      .card-keg { padding: 0.75rem !important; }
+    }
+
+    /* ─── Very small phones (≤380px) ──────────────── */
+    @media (max-width: 380px) {
+      .header-subtitle { display: none; }
+      #tap-count { display: none; }
+      .header-title { font-size: 0.95rem; }
+    }
   </style>
   <link rel="stylesheet" href="/theme.css">
   <script src="/i18n.js"></script>
