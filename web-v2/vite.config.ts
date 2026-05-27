@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// During `vite` dev, proxy API + WS calls to the running Elixir backend.
-// In Docker, nginx handles the same proxy at runtime (see web-v2/nginx.conf).
-const BACKEND = process.env.VITE_BACKEND_URL || 'http://localhost:8085'
+// Dev proxy target. The Docker build doesn't use this — nginx handles
+// the same proxy at runtime (see web-v2/nginx.conf). To point a local
+// `npm run dev` at a remote backend (e.g. the Pi via Tailscale), just
+// edit this value.
+const BACKEND = 'http://localhost:8085'
 
 export default defineConfig({
   plugins: [react()],
