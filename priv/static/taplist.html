@@ -315,8 +315,37 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Language toggle ──────────────────────────── */
+    .lang-toggle {
+      display: inline-flex;
+      gap: 0.25rem;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .lang-toggle button {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-muted);
+      font-size: 1rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      cursor: pointer;
+      line-height: 1;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .lang-toggle button:hover {
+      border-color: rgba(255,255,255,0.22);
+      color: var(--text);
+    }
+    .lang-toggle button.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--bg);
+    }
   </style>
   <link rel="stylesheet" href="/theme.css">
+  <script src="/i18n.js"></script>
 </head>
 <body>
 
@@ -324,8 +353,8 @@
     <div class="header-brand">
       <span class="header-icon">🍺</span>
       <div>
-        <div class="header-title">TAP ROOM</div>
-        <div class="header-subtitle">Open Plaato <span id="appVersion" style="opacity:0.45;"></span></div>
+        <div class="header-title" data-i18n="taplist_title">TAP ROOM</div>
+        <div class="header-subtitle"><span data-i18n="taplist_subtitle">Open Plaato</span> <span id="appVersion" style="opacity:0.45;"></span></div>
       </div>
     </div>
     <div style="text-align:right;">
@@ -333,20 +362,24 @@
       <div id="tap-count"></div>
     </div>
     <nav class="header-nav">
-      <a href="/index.html">Kegs</a>
-      <a href="/history.html">History</a>
+      <a href="/index.html" data-i18n="nav_kegs">Kegs</a>
+      <a href="/history.html" data-i18n="nav_history">History</a>
       <div class="nav-dropdown" id="configDropdown">
-        <button class="nav-dropdown-toggle" onclick="toggleConfigMenu(event)">Configure ▾</button>
+        <button class="nav-dropdown-toggle" onclick="toggleConfigMenu(event)" data-i18n="nav_configure_arrow">Configure ▾</button>
         <div class="nav-dropdown-menu">
-          <a href="/taplist-setup.html">Tap Setup</a>
-          <a href="/tap-handles.html">Tap Handles</a>
-          <a href="/setup.html">Scale Setup</a>
-          <a href="/dashboard-setup.html">Dashboard Setup</a>
-          <a href="/server-update.html">Server Update</a>
-          <a href="/airlock-setup.html">Airlock Setup</a>
-          <a href="/transfer-scales.html">Transfer Scales</a>
-          <a href="/beverages.html">Beverages</a>
+          <a href="/taplist-setup.html" data-i18n="nav_tap_setup">Tap Setup</a>
+          <a href="/tap-handles.html" data-i18n="nav_tap_handles">Tap Handles</a>
+          <a href="/setup.html" data-i18n="nav_scale_setup">Scale Setup</a>
+          <a href="/dashboard-setup.html" data-i18n="nav_dashboard_setup">Dashboard Setup</a>
+          <a href="/server-update.html" data-i18n="nav_server_update">Server Update</a>
+          <a href="/airlock-setup.html" data-i18n="nav_airlock_setup">Airlock Setup</a>
+          <a href="/transfer-scales.html" data-i18n="nav_transfer_scales">Transfer Scales</a>
+          <a href="/beverages.html" data-i18n="nav_beverages">Beverages</a>
         </div>
+      </div>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang-set="en" data-lang-flag="en" title="English">🇬🇧</button>
+        <button type="button" data-lang-set="da" data-lang-flag="da" title="Dansk">🇩🇰</button>
       </div>
     </nav>
   </header>
@@ -355,7 +388,7 @@
     <div class="tap-list" id="tapList">
       <div class="loading-state">
         <div class="spinner"></div>
-        <p>Loading taps…</p>
+        <p data-i18n="taplist_loading">Loading taps…</p>
       </div>
     </div>
   </main>
@@ -486,11 +519,11 @@
       if (pct !== null) {
         kegHtml = buildKegSvg(pct, color, amount, unit);
         if (tempStr) kegHtml += `<div class="keg-temp">${escHtml(tempStr)}${escHtml(tempUnit)}</div>`;
-        if (isPouring) kegHtml += `<div class="pouring-badge">● POURING</div>`;
+        if (isPouring) kegHtml += `<div class="pouring-badge">${escHtml(i18n.t('taplist_pouring'))}</div>`;
       } else if (tap.keg_id) {
-        kegHtml = '<p class="keg-offline">Sensor offline</p>';
+        kegHtml = `<p class="keg-offline">${escHtml(i18n.t('taplist_sensor_offline'))}</p>`;
       } else {
-        kegHtml = '<p class="keg-offline">No sensor linked</p>';
+        kegHtml = `<p class="keg-offline">${escHtml(i18n.t('taplist_no_sensor'))}</p>`;
       }
 
       card.innerHTML = `
@@ -501,10 +534,10 @@
         </div>
         <div class="card-info">
           <div class="tap-label-row">
-            <span class="tap-label">TAP ${escHtml(String(tap.tap_number || '?'))}</span>
-            ${isPouring ? '<span class="pouring-badge">● NOW POURING</span>' : ''}
+            <span class="tap-label">${escHtml(i18n.t('taplist_tap_label', { n: tap.tap_number || '?' }))}</span>
+            ${isPouring ? `<span class="pouring-badge">${escHtml(i18n.t('taplist_now_pouring'))}</span>` : ''}
           </div>
-          <h2 class="beer-name">${escHtml(tap.name || 'Unnamed Beer')}</h2>
+          <h2 class="beer-name">${escHtml(tap.name || i18n.t('taplist_unnamed_beer'))}</h2>
           ${tap.brewery ? `<p class="brewery-name">${escHtml(tap.brewery)}</p>` : ''}
           ${badges ? `<div class="badges-row">${badges}</div>` : ''}
           ${tap.description ? `<p class="beer-desc">${escHtml(tap.description)}</p>` : ''}
@@ -518,17 +551,23 @@
     // ── Render ─────────────────────────────────────
     function render() {
       const list = document.getElementById('tapList');
+      const n = tapsData.length;
       document.getElementById('tap-count').textContent =
-        tapsData.length ? `${tapsData.length} on tap` : '';
+        n === 0 ? '' :
+        n === 1 ? i18n.t('taplist_tap_count_one') :
+                  i18n.t('taplist_tap_count_other', { n });
 
       if (!tapsData.length) {
-        list.innerHTML = `<p class="no-taps">No taps configured yet. Visit <a href="/taplist-setup.html">Tap Setup</a> to add taps.</p>`;
+        list.innerHTML = `<p class="no-taps">${i18n.t('taplist_no_taps_html')}</p>`;
         return;
       }
 
       list.innerHTML = '';
       tapsData.forEach(tap => list.appendChild(buildCard(tap, kegsData[tap.keg_id])));
     }
+
+    // Re-render dynamic content when language changes
+    document.addEventListener('i18n:changed', () => render());
 
     // ── Partial keg update ─────────────────────────
     function updateCard(kegId) {
@@ -549,7 +588,7 @@
         render();
       } catch (e) {
         document.getElementById('tapList').innerHTML =
-          '<p class="no-taps">Could not load tap data. Is the server running?</p>';
+          `<p class="no-taps">${i18n.t('taplist_load_error')}</p>`;
       }
     }
 
