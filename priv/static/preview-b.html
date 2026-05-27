@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Preview B — Modern Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    /* ─── Reset & tokens ───────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root[data-theme="dark"] {
+      --bg:           #0a0a0c;
+      --bg-elev:      #111114;
+      --bg-card:      #15151a;
+      --bg-card-hover:#1a1a20;
+      --border:       rgba(255,255,255,0.06);
+      --border-strong:rgba(255,255,255,0.12);
+      --text:         #f1f1f3;
+      --text-muted:   #8a8a96;
+      --text-dim:     #525258;
+      --accent:       #f59e0b;          /* amber-500 */
+      --accent-soft:  rgba(245,158,11,0.12);
+      --accent-glow:  rgba(245,158,11,0.35);
+      --success:      #10b981;
+      --warn:         #ef4444;
+      --chart-line:   #f59e0b;
+      --chart-grid:   rgba(255,255,255,0.04);
+      --shadow:       0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    :root[data-theme="light"] {
+      --bg:           #fafafa;
+      --bg-elev:      #ffffff;
+      --bg-card:      #ffffff;
+      --bg-card-hover:#f5f5f7;
+      --border:       rgba(0,0,0,0.06);
+      --border-strong:rgba(0,0,0,0.12);
+      --text:         #0a0a0c;
+      --text-muted:   #525258;
+      --text-dim:     #8a8a96;
+      --accent:       #d97706;
+      --accent-soft:  rgba(217,119,6,0.10);
+      --accent-glow:  rgba(217,119,6,0.25);
+      --success:      #059669;
+      --warn:         #dc2626;
+      --chart-line:   #d97706;
+      --chart-grid:   rgba(0,0,0,0.04);
+      --shadow:       0 1px 0 rgba(0,0,0,0.02) inset, 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      font-feature-settings: 'cv11', 'ss01';
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ─── Layout ──────────────────────────────────── */
+    .container { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem; }
+
+    /* ─── Header ──────────────────────────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: color-mix(in srgb, var(--bg-elev) 80%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      gap: 1.25rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .brand-name { font-size: 0.95rem; }
+    .brand-meta { color: var(--text-dim); font-size: 0.75rem; margin-left: 0.4rem; }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+    .nav a {
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .nav a:hover { background: var(--bg-card-hover); color: var(--text); }
+    .nav a.active { color: var(--text); background: var(--bg-card-hover); }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .icon-btn:hover { background: var(--bg-card-hover); color: var(--text); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    .lang-segment {
+      display: inline-flex;
+      gap: 1px;
+      background: var(--border);
+      padding: 1px;
+      border-radius: 8px;
+    }
+    .lang-segment button {
+      padding: 0.3rem 0.55rem;
+      border: none;
+      background: var(--bg-elev);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-radius: 7px;
+    }
+    .lang-segment button.active { background: var(--accent); color: #0a0a0c; }
+
+    /* ─── Page header ─────────────────────────────── */
+    .page-header {
+      padding: 2rem 0 1.25rem;
+    }
+    .breadcrumb {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+    .breadcrumb a:hover { color: var(--text-muted); }
+    .page-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .badge-active {
+      color: var(--success);
+      background: color-mix(in srgb, var(--success) 12%, transparent);
+    }
+    .badge-active::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .page-subtitle {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-top: 0.35rem;
+    }
+
+    /* ─── KPI grid ────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .kpi {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+      box-shadow: var(--shadow);
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .kpi:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
+    .kpi-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .kpi-value {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+      margin-top: 0.45rem;
+    }
+    .kpi-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.85rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .kpi-unit {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .kpi-delta {
+      margin-top: 0.4rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .kpi-delta.up { color: var(--success); }
+    .kpi-delta.down { color: var(--warn); }
+    .kpi-spark {
+      margin-top: 0.6rem;
+      height: 28px;
+    }
+
+    /* ─── Chart card ──────────────────────────────── */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.25rem 1rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .chart-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .chart-title-sub {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 0.15rem;
+    }
+    .range-segment {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .range-segment button {
+      padding: 0.3rem 0.7rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .range-segment button.active {
+      background: var(--bg-card);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+    .chart-canvas-wrap {
+      position: relative;
+      height: 280px;
+    }
+
+    /* ─── Two-col grid ────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 1.25rem;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .card-sub {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-bottom: 1rem;
+    }
+    .form-row { margin-bottom: 0.9rem; }
+    .form-row label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+    .input {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.875rem;
+      font-family: inherit;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: var(--bg-card);
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0;
+      font-size: 0.875rem;
+    }
+    .switch {
+      width: 36px;
+      height: 20px;
+      background: var(--border-strong);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .switch::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .switch.on { background: var(--accent); }
+    .switch.on::after { left: 18px; }
+
+    .btn {
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-elev);
+      color: var(--text);
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: inherit;
+      transition: background 0.15s ease;
+    }
+    .btn:hover { background: var(--bg-card-hover); }
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0a0c;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, white); }
+    .btn-full { width: 100%; }
+
+    .activity {
+      list-style: none;
+    }
+    .activity li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .activity li:last-child { border-bottom: none; }
+    .activity .time { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* ─── Reset bubble button ──────────────────────── */
+    .reset-button {
+      margin-top: 0.75rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .reset-button:hover {
+      border-color: var(--warn);
+      color: var(--warn);
+    }
+
+    /* ─── Mobile ──────────────────────────────────── */
+    @media (max-width: 800px) {
+      .topbar-inner { height: auto; padding: 0.6rem 0; flex-wrap: wrap; gap: 0.5rem; }
+      .nav { flex: 1 1 100%; order: 3; justify-content: flex-start; overflow-x: auto; }
+      .topbar-actions { margin-left: auto; }
+      .page-title { font-size: 1.4rem; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .chart-canvas-wrap { height: 220px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <div>
+          <span class="brand-name">Open Plaato</span>
+          <span class="brand-meta">v0.1.96</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#">Dashboard</a>
+        <a href="#" class="active">Airlocks</a>
+        <a href="#">Kegs</a>
+        <a href="#">History</a>
+        <a href="#">Settings</a>
+      </nav>
+      <div class="topbar-actions">
+        <div class="lang-segment">
+          <button class="active">EN</button>
+          <button>DA</button>
+        </div>
+        <button class="icon-btn" id="themeBtn" title="Toggle theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path id="themeIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 0.5rem; padding-bottom: 3rem;">
+
+    <div class="page-header">
+      <div class="breadcrumb">
+        <a href="#">Airlocks</a> &nbsp;/&nbsp; <span>Primary Fermenter</span>
+      </div>
+      <div class="page-title-row">
+        <div>
+          <h1 class="page-title">Primary Fermenter</h1>
+          <p class="page-subtitle">IPA Batch #14 — kegged 12 Mar 2026 · 7d 4h elapsed</p>
+        </div>
+        <span class="badge badge-active">Fermenting</span>
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Total bubbles · since reset</div>
+        <div class="kpi-value">
+          <span class="kpi-number">18,432</span>
+          <span class="kpi-unit">bubbles</span>
+        </div>
+        <div class="kpi-delta up">↑ 1,204 in last 24h</div>
+        <button class="reset-button">Reset counter</button>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Bubbles per minute · live</div>
+        <div class="kpi-value">
+          <span class="kpi-number">3.8</span>
+          <span class="kpi-unit">bpm</span>
+        </div>
+        <div class="kpi-delta down">↓ from 4.2 (1h avg)</div>
+        <div class="kpi-spark"><canvas id="bpmSpark"></canvas></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Temperature · live</div>
+        <div class="kpi-value">
+          <span class="kpi-number">20.4</span>
+          <span class="kpi-unit">°C</span>
+        </div>
+        <div class="kpi-delta">stable</div>
+        <div class="kpi-spark"><canvas id="tempSpark"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Main chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Bubbles per minute</div>
+          <div class="chart-title-sub">Fermentation activity over time</div>
+        </div>
+        <div class="range-segment">
+          <button>1d</button>
+          <button class="active">3d</button>
+          <button>7d</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="bpmChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Two col: notifications + activity -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Notifications</div>
+        <div class="card-sub">Get alerted when fermentation starts, peaks, or stops.</div>
+
+        <div class="form-row">
+          <label>Fermentation-start threshold</label>
+          <input type="number" class="input" value="2.0" />
+        </div>
+
+        <div class="checkbox-row">
+          <div class="switch on"></div>
+          <div>
+            <div>Push notification (ntfy.sh)</div>
+            <div style="color:var(--text-dim); font-size:0.75rem;">Free, no SMS cost. Install ntfy app and subscribe to <span class="mono">plaato-pers</span>.</div>
+          </div>
+        </div>
+
+        <div class="checkbox-row">
+          <div class="switch"></div>
+          <div>
+            <div>Email digest</div>
+            <div style="color:var(--text-dim); font-size:0.75rem;">Daily summary via Resend → per_eiland@hotmail.com</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" style="margin-top:0.75rem;">Save notification settings</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recent activity</div>
+        <div class="card-sub">Last 24 hours</div>
+        <ul class="activity">
+          <li><span>Fermentation peak</span><span class="time">2h ago · 8.4 bpm</span></li>
+          <li><span>Threshold crossed</span><span class="time">8h ago · &gt;2.0 bpm</span></li>
+          <li><span>Temperature stable</span><span class="time">12h ago · 20.4°C</span></li>
+          <li><span>Connection re-established</span><span class="time">18h ago</span></li>
+          <li><span>Batch started</span><span class="time">7d ago · 18:42</span></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ── Theme toggle ────────────────────────────────
+    const root = document.documentElement;
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const sunPath = 'M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M4.93 19.07l1.41-1.41 M17.66 6.34l1.41-1.41 M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z';
+    const moonPath = 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z';
+
+    function applyTheme(t) {
+      root.dataset.theme = t;
+      themeIcon.setAttribute('d', t === 'dark' ? moonPath : sunPath);
+      localStorage.setItem('plaato_theme', t);
+      updateCharts();
+    }
+    themeBtn.addEventListener('click', () => {
+      applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+    applyTheme(localStorage.getItem('plaato_theme') || 'dark');
+
+    // ── Generate realistic mock data ────────────────
+    function genFermentationCurve(days, points) {
+      // Models real fermentation: lag → exponential → peak → decline
+      const data = [];
+      const now = Date.now();
+      const step = (days * 86400000) / points;
+      for (let i = 0; i < points; i++) {
+        const t = now - (points - i) * step;
+        const x = i / points; // 0 to 1
+        // Curve: low → rise around 0.15 → peak at 0.35 → decay to 0
+        let bpm;
+        if (x < 0.1) bpm = 0.1 + Math.random() * 0.3;
+        else if (x < 0.35) {
+          const k = (x - 0.1) / 0.25;
+          bpm = 0.3 + k * 9 + (Math.random() - 0.5) * 1.2;
+        } else {
+          const k = (x - 0.35) / 0.65;
+          bpm = Math.max(0, 9 * Math.exp(-2.5 * k) + (Math.random() - 0.5) * 0.8);
+        }
+        data.push({ t, v: Math.max(0, +bpm.toFixed(2)) });
+      }
+      return data;
+    }
+
+    const bpmData = genFermentationCurve(3, 90);
+    const tempData = bpmData.map((p, i) => ({ t: p.t, v: 19.5 + Math.sin(i * 0.1) * 0.6 + Math.random() * 0.3 }));
+
+    let charts = {};
+
+    function chartColors() {
+      const style = getComputedStyle(root);
+      return {
+        line: style.getPropertyValue('--chart-line').trim(),
+        grid: style.getPropertyValue('--chart-grid').trim(),
+        text: style.getPropertyValue('--text-muted').trim(),
+        accent: style.getPropertyValue('--accent').trim(),
+        glow: style.getPropertyValue('--accent-glow').trim(),
+      };
+    }
+
+    function makeMainChart() {
+      if (charts.main) charts.main.destroy();
+      const c = chartColors();
+      const ctx = document.getElementById('bpmChart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+      gradient.addColorStop(0, c.glow);
+      gradient.addColorStop(1, 'rgba(245,158,11,0)');
+      charts.main = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: bpmData.map(p => new Date(p.t)),
+          datasets: [{
+            data: bpmData.map(p => p.v),
+            borderColor: c.line,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHoverBackgroundColor: c.line,
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 600, easing: 'easeOutQuart' },
+          plugins: { legend: { display: false }, tooltip: {
+            backgroundColor: 'rgba(15,15,20,0.95)',
+            titleColor: '#fff',
+            bodyColor: '#cfcfd6',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+              title: (items) => new Date(items[0].parsed.x).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+              label: (item) => `${item.parsed.y.toFixed(1)} bpm`
+            }
+          }},
+          scales: {
+            x: {
+              type: 'time',
+              grid: { color: c.grid, drawTicks: false },
+              ticks: { color: c.text, font: { size: 11 }, maxRotation: 0 },
+              border: { display: false },
+            },
+            y: {
+              grid: { color: c.grid, drawTicks: false },
+              ticks: { color: c.text, font: { size: 11 }, callback: v => v + ' bpm' },
+              border: { display: false },
+              beginAtZero: true,
+            }
+          }
+        }
+      });
+    }
+
+    function makeSpark(canvasId, data) {
+      if (charts[canvasId]) charts[canvasId].destroy();
+      const c = chartColors();
+      charts[canvasId] = new Chart(document.getElementById(canvasId), {
+        type: 'line',
+        data: {
+          labels: data.map(d => ''),
+          datasets: [{
+            data: data.map(d => d.v),
+            borderColor: c.line,
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            tension: 0.35,
+            pointRadius: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { display: false }, y: { display: false } },
+          animation: false,
+        }
+      });
+    }
+
+    function updateCharts() {
+      makeMainChart();
+      makeSpark('bpmSpark', bpmData.slice(-30));
+      makeSpark('tempSpark', tempData.slice(-30));
+    }
+
+    // Range segment buttons (purely visual)
+    document.querySelectorAll('.range-segment button, .lang-segment button').forEach(b => {
+      b.addEventListener('click', () => {
+        const group = b.parentElement;
+        group.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      });
+    });
+
+    // Switches
+    document.querySelectorAll('.switch').forEach(s => {
+      s.addEventListener('click', () => s.classList.toggle('on'));
+    });
+
+    updateCharts();
+  </script>
+</body>
+</html>

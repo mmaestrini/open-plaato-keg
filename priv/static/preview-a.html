@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Preview A — Warm Brewery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ─── Theme tokens ─────────────────────────────── */
+    :root[data-theme="dark"] {
+      --bg:           #1a120a;
+      --bg-grain:     #1f1610;
+      --bg-card:      #261b12;
+      --bg-card-hover:#2d2117;
+      --border:       rgba(212,146,74,0.12);
+      --border-strong:rgba(212,146,74,0.28);
+      --text:         #f5ead4;
+      --text-muted:   #c0a880;
+      --text-dim:     #7a6648;
+      --accent:       #d4924a;       /* warm amber */
+      --accent-deep:  #b87333;       /* copper */
+      --accent-soft:  rgba(212,146,74,0.14);
+      --accent-glow:  rgba(212,146,74,0.32);
+      --success:      #8cb369;
+      --warn:         #d96d54;
+      --chart-line:   #d4924a;
+      --chart-grid:   rgba(212,146,74,0.08);
+      --paper-noise:  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.7 0 0 0 0 0.55 0 0 0 0 0.35 0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+
+    :root[data-theme="light"] {
+      --bg:           #f5ebd6;
+      --bg-grain:     #f2e7cd;
+      --bg-card:      #fbf4e2;
+      --bg-card-hover:#f7eed3;
+      --border:       rgba(120,80,40,0.15);
+      --border-strong:rgba(120,80,40,0.30);
+      --text:         #2a1d10;
+      --text-muted:   #6a4f30;
+      --text-dim:     #a08868;
+      --accent:       #b87333;
+      --accent-deep:  #8a5828;
+      --accent-soft:  rgba(184,115,51,0.12);
+      --accent-glow:  rgba(184,115,51,0.20);
+      --success:      #5e7e3a;
+      --warn:         #b14b3a;
+      --chart-line:   #b87333;
+      --chart-grid:   rgba(120,80,40,0.08);
+      --paper-noise:  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.22 0 0 0 0 0.10 0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      background-image: var(--paper-noise);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    .serif { font-family: 'Fraunces', Georgia, serif; }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
+
+    .container { max-width: 1180px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ─── Header ───────────────────────────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: color-mix(in srgb, var(--bg-grain) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+      gap: 1.5rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 10px var(--accent-glow);
+    }
+    .brand-text {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+    }
+    .brand-title {
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    .brand-subtitle {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .nav a {
+      padding: 0.55rem 0.95rem;
+      font-family: 'Fraunces', serif;
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .nav a:hover { color: var(--text); }
+    .nav a.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .icon-btn:hover { background: var(--bg-card-hover); color: var(--accent); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    .lang-segment {
+      display: inline-flex;
+      gap: 0.3rem;
+    }
+    .lang-segment button {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Fraunces', serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .lang-segment button.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ─── Page header ─────────────────────────────── */
+    .page-header {
+      padding: 2.5rem 0 1.5rem;
+      text-align: center;
+      position: relative;
+    }
+    .ornament {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      letter-spacing: 0.3em;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .ornament::before, .ornament::after {
+      content: '';
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+    .page-title {
+      font-family: 'Fraunces', serif;
+      font-size: 2.6rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      margin-bottom: 0.6rem;
+    }
+    .page-subtitle {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      max-width: 36ch;
+      margin: 0 auto;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding: 0.4rem 0.95rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: 'Fraunces', serif;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--accent-soft);
+    }
+    .status-pill::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      animation: glow 2s ease-in-out infinite;
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft); }
+      50% { box-shadow: 0 0 0 6px transparent; }
+    }
+
+    /* ─── KPIs (medallions) ───────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin: 2rem 0 1.5rem;
+    }
+    .kpi {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .kpi:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+    .kpi::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, var(--accent-soft), transparent 50%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .kpi-label {
+      color: var(--text-muted);
+      font-family: 'Fraunces', serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      position: relative;
+    }
+    .kpi-value {
+      display: flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      margin-top: 0.6rem;
+      position: relative;
+    }
+    .kpi-number {
+      font-family: 'Fraunces', serif;
+      font-size: 2.3rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1;
+      color: var(--text);
+    }
+    .kpi-unit {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+    .kpi-delta {
+      margin-top: 0.55rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      position: relative;
+    }
+    .kpi-delta.up { color: var(--success); }
+    .kpi-delta.down { color: var(--warn); }
+    .kpi-spark {
+      margin-top: 0.75rem;
+      height: 30px;
+      position: relative;
+    }
+    .reset-button {
+      margin-top: 0.85rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .reset-button:hover {
+      border-color: var(--warn);
+      color: var(--warn);
+    }
+
+    /* ─── Chart card ──────────────────────────────── */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .chart-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .chart-title-sub {
+      color: var(--text-muted);
+      font-size: 0.83rem;
+      font-style: italic;
+      margin-top: 0.15rem;
+    }
+    .range-segment {
+      display: inline-flex;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px;
+    }
+    .range-segment button {
+      padding: 0.4rem 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Fraunces', serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      border-radius: 999px;
+      transition: all 0.18s ease;
+    }
+    .range-segment button.active {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .chart-canvas-wrap {
+      position: relative;
+      height: 290px;
+    }
+
+    /* ─── Two col ─────────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+    }
+    .card-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .card-sub {
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-style: italic;
+      margin-bottom: 1.1rem;
+    }
+    .form-row { margin-bottom: 1rem; }
+    .form-row label {
+      display: block;
+      font-family: 'Fraunces', serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: border-color 0.15s ease;
+    }
+    .input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0;
+    }
+    .switch {
+      width: 38px;
+      height: 22px;
+      background: var(--border-strong);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+    .switch::after {
+      content: '';
+      width: 18px;
+      height: 18px;
+      background: var(--text);
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s ease, background 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .switch.on { background: var(--accent); }
+    .switch.on::after { left: 18px; background: var(--bg); }
+    .switch-label-text {
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+    .switch-label-sub {
+      color: var(--text-dim);
+      font-size: 0.76rem;
+      font-style: italic;
+      margin-top: 0.15rem;
+    }
+
+    .btn {
+      padding: 0.7rem 1rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      color: var(--text);
+      font-family: 'Fraunces', serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      transition: background 0.15s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: var(--bg);
+      border-color: transparent;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+    .btn-full { width: 100%; margin-top: 1rem; }
+
+    .activity { list-style: none; }
+    .activity li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 0.88rem;
+    }
+    .activity li:last-child { border-bottom: none; }
+    .activity .time {
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      font-style: italic;
+    }
+    .activity .icon {
+      color: var(--accent);
+      margin-right: 0.5rem;
+    }
+
+    /* ─── Mobile ──────────────────────────────────── */
+    @media (max-width: 800px) {
+      .topbar-inner { flex-wrap: wrap; gap: 0.6rem; padding: 0.75rem 0; }
+      .nav { flex: 1 1 100%; order: 3; overflow-x: auto; padding-bottom: 0.25rem; }
+      .topbar-actions { margin-left: auto; }
+      .page-title { font-size: 1.9rem; }
+      .ornament::before, .ornament::after { width: 30px; }
+      .kpi-row { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .chart-canvas-wrap { height: 220px; }
+      .chart-title { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">🍺</span>
+        <div class="brand-text">
+          <div class="brand-title">Pers Bryggeri</div>
+          <div class="brand-subtitle">Open Plaato · v0.1.96</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#">Tap Room</a>
+        <a href="#" class="active">Cellar</a>
+        <a href="#">Kegs</a>
+        <a href="#">History</a>
+        <a href="#">Settings</a>
+      </nav>
+      <div class="topbar-actions">
+        <div class="lang-segment">
+          <button class="active">EN</button>
+          <button>DA</button>
+        </div>
+        <button class="icon-btn" id="themeBtn" title="Toggle theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path id="themeIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-bottom: 4rem;">
+
+    <div class="page-header">
+      <div class="ornament">— Cellar —</div>
+      <h1 class="page-title serif">Primary Fermenter</h1>
+      <p class="page-subtitle">IPA Batch №14 · pitched 12 March, 7 days in</p>
+      <div class="status-pill">Fermenting</div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">Total Bubbles</div>
+        <div class="kpi-value">
+          <span class="kpi-number">18,432</span>
+          <span class="kpi-unit">since reset</span>
+        </div>
+        <div class="kpi-delta up">↑ 1,204 in last 24 hours</div>
+        <button class="reset-button">Reset counter</button>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Bubbles · per minute</div>
+        <div class="kpi-value">
+          <span class="kpi-number">3.8</span>
+          <span class="kpi-unit">live</span>
+        </div>
+        <div class="kpi-delta down">↓ from 4.2 (1h avg)</div>
+        <div class="kpi-spark"><canvas id="bpmSpark"></canvas></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Temperature</div>
+        <div class="kpi-value">
+          <span class="kpi-number">20.4</span>
+          <span class="kpi-unit">°C</span>
+        </div>
+        <div class="kpi-delta">stable</div>
+        <div class="kpi-spark"><canvas id="tempSpark"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Main chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Fermentation activity</div>
+          <div class="chart-title-sub">Bubbles per minute over time</div>
+        </div>
+        <div class="range-segment">
+          <button>1d</button>
+          <button class="active">3d</button>
+          <button>7d</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="bpmChart"></canvas>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Brewmaster's alerts</div>
+        <div class="card-sub">Be summoned to the cellar when the fermentation begins.</div>
+
+        <div class="form-row">
+          <label>Start-of-fermentation threshold</label>
+          <input type="number" class="input" value="2.0" />
+        </div>
+
+        <div class="checkbox-row">
+          <div class="switch on"></div>
+          <div>
+            <div class="switch-label-text">Push notification</div>
+            <div class="switch-label-sub">Free, instant — install ntfy on iPhone</div>
+          </div>
+        </div>
+
+        <div class="checkbox-row">
+          <div class="switch"></div>
+          <div>
+            <div class="switch-label-text">Daily email summary</div>
+            <div class="switch-label-sub">Sent via Resend to per_eiland@hotmail.com</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full">Save alert settings</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Brewer's log</div>
+        <div class="card-sub">Recent activity</div>
+        <ul class="activity">
+          <li><span><span class="icon">✦</span>Fermentation peak</span><span class="time">2h ago · 8.4 bpm</span></li>
+          <li><span><span class="icon">✦</span>Threshold crossed</span><span class="time">8h ago · &gt;2.0 bpm</span></li>
+          <li><span><span class="icon">✦</span>Temperature stable</span><span class="time">12h ago</span></li>
+          <li><span><span class="icon">✦</span>Connection restored</span><span class="time">18h ago</span></li>
+          <li><span><span class="icon">✦</span>Batch pitched</span><span class="time">7 days ago · 18:42</span></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const root = document.documentElement;
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const sunPath = 'M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M4.93 19.07l1.41-1.41 M17.66 6.34l1.41-1.41 M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z';
+    const moonPath = 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z';
+
+    function applyTheme(t) {
+      root.dataset.theme = t;
+      themeIcon.setAttribute('d', t === 'dark' ? moonPath : sunPath);
+      localStorage.setItem('plaato_theme_a', t);
+      updateCharts();
+    }
+    themeBtn.addEventListener('click', () => {
+      applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+    applyTheme(localStorage.getItem('plaato_theme_a') || 'dark');
+
+    function genFermentationCurve(days, points) {
+      const data = [];
+      const now = Date.now();
+      const step = (days * 86400000) / points;
+      for (let i = 0; i < points; i++) {
+        const t = now - (points - i) * step;
+        const x = i / points;
+        let bpm;
+        if (x < 0.1) bpm = 0.1 + Math.random() * 0.3;
+        else if (x < 0.35) {
+          const k = (x - 0.1) / 0.25;
+          bpm = 0.3 + k * 9 + (Math.random() - 0.5) * 1.2;
+        } else {
+          const k = (x - 0.35) / 0.65;
+          bpm = Math.max(0, 9 * Math.exp(-2.5 * k) + (Math.random() - 0.5) * 0.8);
+        }
+        data.push({ t, v: Math.max(0, +bpm.toFixed(2)) });
+      }
+      return data;
+    }
+
+    const bpmData = genFermentationCurve(3, 90);
+    const tempData = bpmData.map((p, i) => ({ t: p.t, v: 19.5 + Math.sin(i * 0.1) * 0.6 + Math.random() * 0.3 }));
+
+    let charts = {};
+
+    function chartColors() {
+      const style = getComputedStyle(root);
+      return {
+        line: style.getPropertyValue('--chart-line').trim(),
+        grid: style.getPropertyValue('--chart-grid').trim(),
+        text: style.getPropertyValue('--text-muted').trim(),
+        accent: style.getPropertyValue('--accent').trim(),
+        glow: style.getPropertyValue('--accent-glow').trim(),
+      };
+    }
+
+    function makeMainChart() {
+      if (charts.main) charts.main.destroy();
+      const c = chartColors();
+      const ctx = document.getElementById('bpmChart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 290);
+      gradient.addColorStop(0, c.glow);
+      gradient.addColorStop(1, 'rgba(212,146,74,0)');
+      charts.main = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: bpmData.map(p => new Date(p.t)),
+          datasets: [{
+            data: bpmData.map(p => p.v),
+            borderColor: c.line,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2.5,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: c.line,
+            pointHoverBorderColor: 'rgba(255,255,255,0.9)',
+            pointHoverBorderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800, easing: 'easeOutCubic' },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(26,18,10,0.96)',
+              titleColor: '#f5ead4',
+              bodyColor: '#c0a880',
+              titleFont: { family: 'Fraunces', weight: 'bold', size: 12 },
+              bodyFont: { family: 'Inter', size: 12 },
+              borderColor: 'rgba(212,146,74,0.3)',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false,
+              callbacks: {
+                title: (items) => new Date(items[0].parsed.x).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                label: (item) => `${item.parsed.y.toFixed(1)} bubbles/min`
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              grid: { color: c.grid, drawTicks: false },
+              ticks: { color: c.text, font: { family: 'Fraunces', size: 11 }, maxRotation: 0 },
+              border: { display: false },
+            },
+            y: {
+              grid: { color: c.grid, drawTicks: false },
+              ticks: { color: c.text, font: { family: 'Fraunces', size: 11 } },
+              border: { display: false },
+              beginAtZero: true,
+            }
+          }
+        }
+      });
+    }
+
+    function makeSpark(canvasId, data) {
+      if (charts[canvasId]) charts[canvasId].destroy();
+      const c = chartColors();
+      charts[canvasId] = new Chart(document.getElementById(canvasId), {
+        type: 'line',
+        data: {
+          labels: data.map(() => ''),
+          datasets: [{
+            data: data.map(d => d.v),
+            borderColor: c.line,
+            backgroundColor: 'transparent',
+            borderWidth: 1.8,
+            tension: 0.35,
+            pointRadius: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { display: false }, y: { display: false } },
+          animation: false,
+        }
+      });
+    }
+
+    function updateCharts() {
+      makeMainChart();
+      makeSpark('bpmSpark', bpmData.slice(-30));
+      makeSpark('tempSpark', tempData.slice(-30));
+    }
+
+    document.querySelectorAll('.range-segment button, .lang-segment button').forEach(b => {
+      b.addEventListener('click', () => {
+        const group = b.parentElement;
+        group.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.switch').forEach(s => {
+      s.addEventListener('click', () => s.classList.toggle('on'));
+    });
+
+    updateCharts();
+  </script>
+</body>
+</html>
