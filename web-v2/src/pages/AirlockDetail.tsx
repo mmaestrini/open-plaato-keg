@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import { api, Airlock, LogEntry, Range, openWS } from '../lib/api'
 import { useI18n } from '../lib/i18n'
-import { useDemoMode, mockHistory, mockAirlock } from '../lib/demo'
+import { useDemoMode, mockHistory, mockAirlock, DEMO_AIRLOCK_ID } from '../lib/demo'
 import { useThemeColors } from '../lib/themeColors'
 
 type Props = {
@@ -26,36 +26,53 @@ export function AirlockDetail({ airlockId }: Props) {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
+  // Race guard: if we've been handed the demo id, treat as demo regardless
+  // of what the context says. This prevents a final re-render during the
+  // demo→real swap (when this component is about to unmount) from firing
+  // a real fetch against the synthetic id and producing a 404.
+  const isDemoData = demo || airlockId === DEMO_AIRLOCK_ID
+
   // Initial load (real API, or synthetic when in demo mode)
   useEffect(() => {
     setLoading(true)
-    if (demo) {
+    if (isDemoData) {
       setAirlock(mockAirlock(airlockId))
       setHistory(mockHistory(range))
       setErr(null)
       setLoading(false)
       return
     }
+    let cancelled = false
     Promise.all([api.airlock(airlockId), api.airlockHistory(airlockId, range)])
       .then(([a, h]) => {
+        if (cancelled) return
         setAirlock(a)
         setHistory(h)
         setErr(null)
       })
-      .catch((e) => setErr(String(e)))
-      .finally(() => setLoading(false))
-  }, [airlockId, range, demo])
+      .catch((e) => {
+        if (cancelled) return
+        setErr(String(e))
+      })
+      .finally(() => {
+        if (cancelled) return
+        setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [airlockId, range, isDemoData])
 
   // Live WebSocket updates (real mode only; demo data is static)
   useEffect(() => {
-    if (demo) return
+    if (isDemoData) return
     const ws = openWS((msg) => {
       if (msg.type === 'airlock' && msg.data?.id === airlockId) {
         setAirlock((a) => ({ ...(a ?? { id: airlockId }), ...msg.data }))
       }
     })
     return () => ws.close()
-  }, [airlockId, demo])
+  }, [airlockId, isDemoData])
 
   const stats = useMemo(() => deriveStats(history), [history])
 
