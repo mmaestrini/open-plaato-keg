@@ -21,16 +21,26 @@ export default function App() {
   const { demo, setDemo } = useDemoMode()
   const [airlocks, setAirlocks] = useState<Airlock[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [retryNonce, setRetryNonce] = useState(0)
 
-  useEffect(() => {
+  const fetchAirlocks = () => {
     api
       .airlocks()
       .then((a) => {
         setAirlocks(a)
         setErr(null)
       })
-      .catch((e) => setErr(String(e)))
-  }, [])
+      .catch((e) => {
+        console.error('Failed to fetch airlocks:', e)
+        setErr(String(e))
+      })
+  }
+
+  // Re-fetch on mount, on demo flip (so a silent failure during demo
+  // doesn't strand the user in an error state forever), and on retry.
+  useEffect(() => {
+    fetchAirlocks()
+  }, [demo, retryNonce])
 
   const activeAirlockId = demo
     ? DEMO_AIRLOCK_ID
@@ -50,9 +60,17 @@ export default function App() {
       {/* Real mode + error fetching airlocks */}
       {!demo && err && (
         <main className="container-pers py-10">
-          <div className="card-pers text-center">
+          <div className="card-pers mx-auto max-w-lg text-center">
             <p className="font-serif text-lg">{t('error_loading')}</p>
-            <p className="mt-2 text-xs text-text-dim">{err}</p>
+            <p className="mt-2 break-all text-xs text-text-muted">{err}</p>
+            <div className="mt-5 flex justify-center gap-3">
+              <button onClick={() => setRetryNonce((n) => n + 1)} className="btn-primary-pers">
+                Retry
+              </button>
+              <button onClick={() => setDemo(true)} className="btn-pers">
+                {t('show_demo')}
+              </button>
+            </div>
           </div>
         </main>
       )}
