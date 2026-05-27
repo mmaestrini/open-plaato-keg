@@ -11,6 +11,7 @@ import {
 import { api, Airlock, LogEntry, Range, openWS } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import { useDemoMode, mockHistory, mockAirlock } from '../lib/demo'
+import { useThemeColors } from '../lib/themeColors'
 
 type Props = {
   airlockId: string
@@ -253,14 +254,23 @@ function RangeSegment({ range, onChange, t }: { range: Range; onChange: (r: Rang
 }
 
 function ChartArea({ history }: { history: LogEntry[] }) {
+  const colors = useThemeColors()
   const data = useMemo(
     () =>
-      history.map((e) => ({
-        t: e.timestamp * 1000,
-        bpm: e.bubbles_per_min ? Number(e.bubbles_per_min) : null,
-      })),
+      history
+        .map((e) => ({
+          t: e.timestamp * 1000,
+          bpm: e.bubbles_per_min ? Number(e.bubbles_per_min) : 0,
+        }))
+        .sort((a, b) => a.t - b.t),
     [history],
   )
+
+  // Compute y-axis max so a flat-at-zero series still has visible space.
+  const yMax = useMemo(() => {
+    const m = data.reduce((acc, p) => Math.max(acc, p.bpm), 0)
+    return Math.max(m * 1.15, 2)
+  }, [data])
 
   if (data.length === 0) {
     return (
@@ -272,42 +282,53 @@ function ChartArea({ history }: { history: LogEntry[] }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+      <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 10 }}>
         <defs>
           <linearGradient id="bpmGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgb(var(--accent))" stopOpacity={0.32} />
-            <stop offset="100%" stopColor="rgb(var(--accent))" stopOpacity={0} />
+            <stop offset="0%" stopColor={colors.accent} stopOpacity={0.4} />
+            <stop offset="100%" stopColor={colors.accent} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke="rgb(var(--border) / 0.5)" strokeDasharray="2 4" vertical={false} />
+        <CartesianGrid stroke={colors.border} strokeDasharray="2 4" vertical={false} opacity={0.5} />
         <XAxis
           dataKey="t"
           type="number"
           domain={['dataMin', 'dataMax']}
           scale="time"
-          tickFormatter={(ts) =>
-            new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' })
-          }
-          stroke="rgb(var(--text-muted))"
-          tick={{ fontSize: 11, fontFamily: 'Fraunces, serif' }}
+          tickFormatter={(ts) => {
+            const d = new Date(ts)
+            // For ranges within ~36h, show hour. Else show day.
+            const span = data[data.length - 1].t - data[0].t
+            if (span < 36 * 3600 * 1000) {
+              return d.toLocaleString([], { hour: '2-digit', minute: '2-digit' })
+            }
+            return d.toLocaleString([], { month: 'short', day: 'numeric' })
+          }}
+          stroke={colors.textMuted}
+          tick={{ fontSize: 11, fontFamily: 'Fraunces, serif', fill: colors.textMuted }}
           tickLine={false}
           axisLine={false}
+          minTickGap={40}
         />
         <YAxis
-          stroke="rgb(var(--text-muted))"
-          tick={{ fontSize: 11, fontFamily: 'Fraunces, serif' }}
+          domain={[0, yMax]}
+          stroke={colors.textMuted}
+          tick={{ fontSize: 11, fontFamily: 'Fraunces, serif', fill: colors.textMuted }}
           tickLine={false}
           axisLine={false}
+          width={36}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: 'rgb(var(--bg-elev))',
-            border: '1px solid rgb(var(--border-s) / 0.5)',
+            backgroundColor: colors.bgElev,
+            border: `1px solid ${colors.border}`,
             borderRadius: 8,
             fontFamily: 'Inter, sans-serif',
             fontSize: 12,
+            color: colors.text,
           }}
-          labelStyle={{ color: 'rgb(var(--text))', fontFamily: 'Fraunces, serif', fontWeight: 600 }}
+          labelStyle={{ color: colors.text, fontFamily: 'Fraunces, serif', fontWeight: 600 }}
+          itemStyle={{ color: colors.text }}
           labelFormatter={(ts) =>
             new Date(Number(ts)).toLocaleString([], {
               month: 'short',
@@ -316,17 +337,18 @@ function ChartArea({ history }: { history: LogEntry[] }) {
               minute: '2-digit',
             })
           }
-          formatter={(v: number) => [`${v?.toFixed?.(1) ?? v} bubbles/min`, '']}
+          formatter={(v: number) => [`${(typeof v === 'number' ? v.toFixed(1) : v)} bubbles/min`, '']}
         />
         <Area
           type="monotone"
           dataKey="bpm"
-          stroke="rgb(var(--accent))"
+          stroke={colors.accent}
           strokeWidth={2.5}
           fill="url(#bpmGrad)"
           isAnimationActive={true}
           animationDuration={600}
           connectNulls
+          dot={false}
         />
       </AreaChart>
     </ResponsiveContainer>
