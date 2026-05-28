@@ -258,10 +258,22 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
       OpenPlaatoKeg.Grainfather.maybe_send(id, Keyword.get(data, :airlock_temperature), bpm && to_string(bpm))
       OpenPlaatoKeg.Brewfather.maybe_send(id, Keyword.get(data, :airlock_temperature), bpm && to_string(bpm), bubble_total)
 
+      # If this packet didn't compute a BPM (e.g. it's a V101 temperature-only
+      # frame in the middle of a wake-up cycle), fall back to the most recent
+      # BPM the airlock had. Otherwise the temperature packet overwrites the
+      # bubble-count packet at the same Unix second in DataLog and the chart
+      # loses every BPM reading.
+      logged_bpm =
+        (bpm && to_string(bpm)) ||
+          case AirlockData.get(id) do
+            %{bubbles_per_min: existing} when is_binary(existing) -> existing
+            _ -> nil
+          end
+
       log_data =
         %{
           "temperature" => Keyword.get(airlock_fields, :temperature),
-          "bubbles_per_min" => bpm && to_string(bpm)
+          "bubbles_per_min" => logged_bpm
         }
         |> Enum.reject(fn {_, v} -> v == nil end)
         |> Map.new()

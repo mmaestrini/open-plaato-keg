@@ -44,6 +44,7 @@ const T = {
     range_3d: '3d',
     range_7d: '7d',
     live_indicator: 'Live',
+    airlock_unnamed: 'Airlock {n}',
 
     notifications_title: "Brewmaster's alerts",
     notifications_sub: 'Be summoned to the cellar when the fermentation begins.',
@@ -106,6 +107,7 @@ const T = {
     range_3d: '3d',
     range_7d: '7d',
     live_indicator: 'Live',
+    airlock_unnamed: 'Gærlås {n}',
 
     notifications_title: 'Brygmesterens alarmer',
     notifications_sub: 'Bliv tilkaldt til kælderen, når gæringen begynder.',
