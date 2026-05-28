@@ -21,18 +21,21 @@ export function AirlockDetail({ airlockId }: Props) {
   const { t, lang } = useI18n()
   const { demo, toggle: toggleDemo } = useDemoMode()
   const [airlock, setAirlock] = useState<Airlock | null>(null)
-  const [range, setRange] = useState<Range>('3d')
+  const [range, setRange] = useState<Range>('24h')
   const [history, setHistory] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  // Bumped whenever a WebSocket packet arrives → triggers a history refetch
+  // so the chart stays in sync with the live state. We also bump every 60s
+  // as a fallback so the chart updates even without WebSocket activity.
+  const [refetchTick, setRefetchTick] = useState(0)
+  const [liveSince, setLiveSince] = useState<number | null>(null)
 
   // Race guard: if we've been handed the demo id, treat as demo regardless
-  // of what the context says. This prevents a final re-render during the
-  // demo→real swap (when this component is about to unmount) from firing
-  // a real fetch against the synthetic id and producing a 404.
+  // of what the context says.
   const isDemoData = demo || airlockId === DEMO_AIRLOCK_ID
 
-  // Initial load (real API, or synthetic when in demo mode)
+  // Initial + range-change + WebSocket-triggered history load
   useEffect(() => {
     setLoading(true)
     if (isDemoData) {
@@ -61,18 +64,32 @@ export function AirlockDetail({ airlockId }: Props) {
     return () => {
       cancelled = true
     }
-  }, [airlockId, range, isDemoData])
+  }, [airlockId, range, isDemoData, refetchTick])
 
-  // Live WebSocket updates (real mode only; demo data is static)
+  // Live WebSocket updates — refresh both current values AND chart history
+  // when a fresh airlock packet arrives for this device.
   useEffect(() => {
     if (isDemoData) return
     const ws = openWS((msg) => {
       if (msg.type === 'airlock' && msg.data?.id === airlockId) {
         setAirlock((a) => ({ ...(a ?? { id: airlockId }), ...msg.data }))
+        setRefetchTick((n) => n + 1)
+        setLiveSince(Date.now())
       }
     })
     return () => ws.close()
   }, [airlockId, isDemoData])
+
+  // Fallback polling: also refetch every 60s so chart stays current even if
+  // WebSocket misses packets (e.g., during a brief disconnect).
+  useEffect(() => {
+    if (isDemoData) return
+    const id = setInterval(() => setRefetchTick((n) => n + 1), 60_000)
+    return () => clearInterval(id)
+  }, [isDemoData])
+
+  // "Live" indicator fades out 90s after last WebSocket packet
+  const liveActive = liveSince != null && Date.now() - liveSince < 90_000
 
   const stats = useMemo(() => deriveStats(history), [history])
 
@@ -137,9 +154,17 @@ export function AirlockDetail({ airlockId }: Props) {
       {/* ── Main chart ───────────────────────────────────── */}
       <section className="card-pers mb-6">
         <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-serif text-lg font-semibold">{t('chart_title')}</h2>
-            <p className="mt-0.5 text-sm italic text-text-muted">{t('chart_subtitle')}</p>
+          <div className="flex items-baseline gap-3">
+            <div>
+              <h2 className="font-serif text-lg font-semibold">{t('chart_title')}</h2>
+              <p className="mt-0.5 text-sm italic text-text-muted">{t('chart_subtitle')}</p>
+            </div>
+            {liveActive && !isDemoData && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/[0.10] px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-widest text-success">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+                {t('live_indicator')}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -244,7 +269,8 @@ function KpiCard({
 }
 
 function RangeSegment({ range, onChange, t }: { range: Range; onChange: (r: Range) => void; t: ReturnType<typeof useI18n>['t'] }) {
-  const options: { value: Range; key: 'range_1d' | 'range_3d' | 'range_7d' }[] = [
+  const options: { value: Range; key: 'range_1h' | 'range_1d' | 'range_3d' | 'range_7d' }[] = [
+    { value: '1h', key: 'range_1h' },
     { value: '24h', key: 'range_1d' },
     { value: '3d', key: 'range_3d' },
     { value: '7d', key: 'range_7d' },
@@ -255,7 +281,7 @@ function RangeSegment({ range, onChange, t }: { range: Range; onChange: (r: Rang
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
-          className={`rounded-full px-4 py-1.5 font-serif text-sm font-medium tracking-wide transition-all ${
+          className={`rounded-full px-3.5 py-1.5 font-serif text-sm font-medium tracking-wide transition-all ${
             range === o.value ? 'bg-accent text-bg' : 'bg-transparent text-text-muted hover:text-text'
           }`}
         >

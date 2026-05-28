@@ -21,7 +21,7 @@ export type LogEntry = {
   bubbles_per_min?: string
 }
 
-export type Range = '24h' | '3d' | '7d' | '30d'
+export type Range = '1h' | '24h' | '3d' | '7d' | '30d'
 
 async function json<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) } })

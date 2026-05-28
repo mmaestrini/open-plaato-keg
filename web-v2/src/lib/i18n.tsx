@@ -39,9 +39,11 @@ const T = {
 
     chart_title: 'Fermentation activity',
     chart_subtitle: 'Bubbles per minute over time',
+    range_1h: '1h',
     range_1d: '1d',
     range_3d: '3d',
     range_7d: '7d',
+    live_indicator: 'Live',
 
     notifications_title: "Brewmaster's alerts",
     notifications_sub: 'Be summoned to the cellar when the fermentation begins.',
@@ -99,9 +101,11 @@ const T = {
 
     chart_title: 'Gæringsaktivitet',
     chart_subtitle: 'Bobler per minut over tid',
+    range_1h: '1t',
     range_1d: '1d',
     range_3d: '3d',
     range_7d: '7d',
+    live_indicator: 'Live',
 
     notifications_title: 'Brygmesterens alarmer',
     notifications_sub: 'Bliv tilkaldt til kælderen, når gæringen begynder.',

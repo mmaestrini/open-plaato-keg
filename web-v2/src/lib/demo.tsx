@@ -58,6 +58,8 @@ export function useDemoMode(): DemoValue {
 
 function rangeToDays(range: Range): number {
   switch (range) {
+    case '1h':
+      return 1 / 24 // ~1 hour
     case '24h':
       return 1
     case '3d':
