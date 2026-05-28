@@ -73,6 +73,15 @@ defmodule OpenPlaatoKeg.Models.DataLog do
   end
 
   @doc """
+  Delete all log entries for a specific device. Used by the airlock reset
+  endpoint to clear chart history when starting a new batch.
+  """
+  def delete_for(device_type, device_id) do
+    :dets.match_delete(@table, {{device_type, device_id, :_}, :_})
+    :ok
+  end
+
+  @doc """
   Delete all log entries older than `days_to_keep` days (default 90).
   """
   def prune(days_to_keep \\ 90) do

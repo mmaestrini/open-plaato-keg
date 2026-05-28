@@ -489,10 +489,10 @@ defmodule OpenPlaatoKeg.HttpRouter do
   end
 
   # Reset the cumulative bubble counter — used when the brewer starts a new
-  # batch. Zeros out total/last bubble counts and the BPM, and stamps a
-  # fresh `last_bubble_count_time` so the first packet after this gives
-  # a sensible BPM (computed against ~now, not against ancient state).
-  # Historical DataLog entries are preserved for charting.
+  # batch. Zeros out total/last bubble counts and the BPM, stamps a fresh
+  # `last_bubble_count_time` so the first packet after this gives a sensible
+  # BPM (computed against ~now, not against ancient state), and deletes the
+  # historical DataLog entries so the chart starts fresh for the new batch.
   post "api/airlocks/:id/reset" do
     airlock_id = conn.params["id"]
     now_ms = to_string(System.system_time(:millisecond))
@@ -505,6 +505,7 @@ defmodule OpenPlaatoKeg.HttpRouter do
     ]
 
     AirlockData.publish(airlock_id, fields)
+    DataLog.delete_for(:airlock, airlock_id)
     WebSocketHandler.publish_airlock(airlock_id, fields)
 
     json_response(conn, 200, %{status: "ok", command: "airlock_reset"})

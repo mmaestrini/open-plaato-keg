@@ -60,7 +60,8 @@ const T = {
     activity_no_events: 'No recent events',
 
     reset_counter: 'Reset counter',
-    reset_confirm: 'Reset bubble counter for this airlock?',
+    reset_confirm:
+      'Reset bubble counter and clear chart history for this airlock? This cannot be undone.',
 
     loading: 'Loading…',
     error_loading: 'Could not load data. Is the server reachable?',
@@ -123,7 +124,8 @@ const T = {
     activity_no_events: 'Ingen seneste hændelser',
 
     reset_counter: 'Nulstil tæller',
-    reset_confirm: 'Nulstil bobletælleren for denne gærlås?',
+    reset_confirm:
+      'Nulstil bobletælleren og slet diagramhistorikken for denne gærlås? Dette kan ikke fortrydes.',
 
     loading: 'Indlæser…',
     error_loading: 'Kunne ikke indlæse data. Kan serveren nås?',
