@@ -64,6 +64,14 @@ export default function App() {
     return airlocks ?? []
   }, [demo, airlocks])
 
+  // When the detail page renames an airlock, patch our local list so the
+  // selector tab updates immediately (no refetch round-trip needed).
+  const handleAirlockLabelChange = (id: string, label: string) => {
+    setAirlocks((prev) =>
+      prev ? prev.map((a) => (a.id === id ? { ...a, label } : a)) : prev,
+    )
+  }
+
   return (
     <>
       <Header />
@@ -78,6 +86,7 @@ export default function App() {
               onChange={() => {/* demo has only one */}}
             />
           </div>
+          {/* No onLabelChange in demo — rename is disabled there anyway */}
           <AirlockDetail key={activeAirlockId} airlockId={activeAirlockId} />
         </>
       )}
@@ -132,7 +141,11 @@ export default function App() {
               onChange={setSelectedId}
             />
           </div>
-          <AirlockDetail key={activeAirlockId} airlockId={activeAirlockId} />
+          <AirlockDetail
+            key={activeAirlockId}
+            airlockId={activeAirlockId}
+            onLabelChange={handleAirlockLabelChange}
+          />
         </>
       )}
     </>

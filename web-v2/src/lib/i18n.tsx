@@ -63,6 +63,11 @@ const T = {
     reset_confirm:
       'Reset bubble counter and clear chart history for this airlock? This cannot be undone.',
 
+    rename_airlock: 'Rename airlock',
+    label_placeholder: 'Friendly name (e.g. IPA)',
+    save: 'Save',
+    cancel: 'Cancel',
+
     loading: 'Loading…',
     error_loading: 'Could not load data. Is the server reachable?',
     no_airlocks: 'No airlocks connected yet.',
@@ -126,6 +131,11 @@ const T = {
     reset_counter: 'Nulstil tæller',
     reset_confirm:
       'Nulstil bobletælleren og slet diagramhistorikken for denne gærlås? Dette kan ikke fortrydes.',
+
+    rename_airlock: 'Omdøb gærlås',
+    label_placeholder: 'Kaldenavn (f.eks. IPA)',
+    save: 'Gem',
+    cancel: 'Annuller',
 
     loading: 'Indlæser…',
     error_loading: 'Kunne ikke indlæse data. Kan serveren nås?',

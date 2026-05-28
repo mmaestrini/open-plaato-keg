@@ -15,9 +15,15 @@ import { useThemeColors } from '../lib/themeColors'
 
 type Props = {
   airlockId: string
+  /**
+   * Fired after a successful label rename so the parent (App.tsx) can update
+   * its airlocks list — keeps the AirlockSelector tabs in sync without
+   * waiting for a full refetch.
+   */
+  onLabelChange?: (id: string, label: string) => void
 }
 
-export function AirlockDetail({ airlockId }: Props) {
+export function AirlockDetail({ airlockId, onLabelChange }: Props) {
   const { t, lang } = useI18n()
   const { demo, toggle: toggleDemo } = useDemoMode()
   const [airlock, setAirlock] = useState<Airlock | null>(null)
@@ -91,6 +97,41 @@ export function AirlockDetail({ airlockId }: Props) {
   // "Live" indicator fades out 90s after last WebSocket packet
   const liveActive = liveSince != null && Date.now() - liveSince < 90_000
 
+  // ── Label rename (Per's friendly name for the airlock) ──────────────
+  // Backend already persists `label` in airlock_data DETS; we just need a
+  // UI to set it. Edit-mode swaps the hero title for an input.
+  const [editingLabel, setEditingLabel] = useState(false)
+  const [labelDraft, setLabelDraft] = useState('')
+  const [savingLabel, setSavingLabel] = useState(false)
+
+  const beginEditLabel = () => {
+    if (isDemoData) return
+    setLabelDraft(airlock?.label ?? '')
+    setEditingLabel(true)
+  }
+  const cancelEditLabel = () => {
+    setEditingLabel(false)
+    setLabelDraft('')
+  }
+  const handleSaveLabel = async () => {
+    if (isDemoData) return
+    const trimmed = labelDraft.trim()
+    setSavingLabel(true)
+    try {
+      await api.setAirlockLabel(airlockId, trimmed)
+      // Optimistically reflect the new label
+      setAirlock((a) => (a ? { ...a, label: trimmed } : a))
+      // Tell the parent so the AirlockSelector tab updates without a refetch.
+      onLabelChange?.(airlockId, trimmed)
+      setEditingLabel(false)
+      setLabelDraft('')
+    } catch (e) {
+      alert('Rename failed: ' + String(e))
+    } finally {
+      setSavingLabel(false)
+    }
+  }
+
   // Reset counter handler — called from the KPI card button
   const [resetting, setResetting] = useState(false)
   const handleResetCounter = async () => {
@@ -133,9 +174,61 @@ export function AirlockDetail({ airlockId }: Props) {
       {/* ── Hero ─────────────────────────────────────────── */}
       <section className="py-10 text-center">
         <Ornament label={t('page_breadcrumb_airlocks')} />
-        <h1 className="font-serif text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-          {label}
-        </h1>
+        {editingLabel ? (
+          <div className="mx-auto flex max-w-xl flex-col items-stretch justify-center gap-2 px-2 sm:flex-row">
+            <input
+              autoFocus
+              type="text"
+              value={labelDraft}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleSaveLabel()
+                else if (e.key === 'Escape') cancelEditLabel()
+              }}
+              placeholder={t('label_placeholder')}
+              maxLength={40}
+              disabled={savingLabel}
+              className="input-pers flex-1 text-center font-serif text-2xl md:text-3xl"
+            />
+            <div className="flex justify-center gap-2">
+              <button
+                onClick={() => void handleSaveLabel()}
+                disabled={savingLabel}
+                className="btn-primary-pers disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingLabel ? '…' : t('save')}
+              </button>
+              <button
+                onClick={cancelEditLabel}
+                disabled={savingLabel}
+                className="btn-pers disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={beginEditLabel}
+            disabled={isDemoData}
+            title={isDemoData ? undefined : t('rename_airlock')}
+            aria-label={isDemoData ? undefined : t('rename_airlock')}
+            className="group mx-auto inline-flex items-center gap-3 px-2 py-1 transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-100"
+          >
+            <h1 className="font-serif text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+              {label}
+            </h1>
+            {!isDemoData && (
+              <span
+                aria-hidden
+                className="font-sans text-xl leading-none text-text-muted opacity-70 transition-colors group-hover:text-accent group-hover:opacity-100"
+              >
+                ✎
+              </span>
+            )}
+          </button>
+        )}
         <p className="mx-auto mt-2 max-w-prose text-sm italic text-text-muted">
           {airlock.id.slice(0, 8)}… · {t('readings_in', { count: history.length, range })}
         </p>

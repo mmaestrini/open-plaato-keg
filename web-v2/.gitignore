@@ -3,3 +3,11 @@ dist
 .DS_Store
 *.log
 .vite
+
+# tsc -b emits these next to .ts/.tsx sources (composite project mode).
+# We don't ship them — Vite does its own transpile via esbuild.
+*.tsbuildinfo
+src/**/*.js
+src/**/*.d.ts
+vite.config.js
+vite.config.d.ts
