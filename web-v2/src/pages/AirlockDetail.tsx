@@ -321,7 +321,7 @@ function ChartArea({ history }: { history: LogEntry[] }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 10 }}>
+      <AreaChart data={data} margin={{ top: 10, right: 16, left: 8, bottom: 10 }}>
         <defs>
           <linearGradient id="bpmGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={colors.accent} stopOpacity={0.4} />
@@ -353,9 +353,10 @@ function ChartArea({ history }: { history: LogEntry[] }) {
           domain={[0, yMax]}
           stroke={colors.textMuted}
           tick={{ fontSize: 11, fontFamily: 'Fraunces, serif', fill: colors.textMuted }}
+          tickFormatter={(v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1))}
           tickLine={false}
           axisLine={false}
-          width={36}
+          width={56}
         />
         <Tooltip
           contentStyle={{
