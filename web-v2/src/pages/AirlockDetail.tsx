@@ -91,6 +91,34 @@ export function AirlockDetail({ airlockId }: Props) {
   // "Live" indicator fades out 90s after last WebSocket packet
   const liveActive = liveSince != null && Date.now() - liveSince < 90_000
 
+  // Reset counter handler — called from the KPI card button
+  const [resetting, setResetting] = useState(false)
+  const handleResetCounter = async () => {
+    if (isDemoData) return
+    if (!confirm(t('reset_confirm'))) return
+    setResetting(true)
+    try {
+      await api.resetAirlock(airlockId)
+      // Optimistically reflect in current state
+      setAirlock((a) =>
+        a
+          ? {
+              ...a,
+              total_bubble_count: '0',
+              last_bubble_count: '0',
+              bubbles_per_min: '0.0',
+            }
+          : a,
+      )
+      // Bump refetch so chart + KPIs re-read from server
+      setRefetchTick((n) => n + 1)
+    } catch (e) {
+      alert('Reset failed: ' + String(e))
+    } finally {
+      setResetting(false)
+    }
+  }
+
   const stats = useMemo(() => deriveStats(history), [history])
 
   if (loading && !airlock) return <Page>{t('loading')}</Page>
@@ -129,7 +157,13 @@ export function AirlockDetail({ airlockId }: Props) {
           delta={stats.last24h ? `↑ ${stats.last24h} ${t('in_last_24h')}` : undefined}
           deltaKind="up"
           extra={
-            <button className="btn-pers mt-3 text-xs">{t('reset_counter')}</button>
+            <button
+              onClick={handleResetCounter}
+              disabled={resetting || isDemoData}
+              className="btn-pers mt-3 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resetting ? '…' : t('reset_counter')}
+            </button>
           }
         />
         <KpiCard

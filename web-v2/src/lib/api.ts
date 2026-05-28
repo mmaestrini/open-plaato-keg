@@ -42,6 +42,10 @@ export const api = {
   setAirlockLabel: (id: string, value: string) =>
     json(`/api/airlocks/${id}/label`, { method: 'POST', body: JSON.stringify({ value }) }),
 
+  // Reset the cumulative bubble counter — call this when starting a new batch.
+  resetAirlock: (id: string) =>
+    json<{ status: string }>(`/api/airlocks/${id}/reset`, { method: 'POST', body: '{}' }),
+
   // Submit a fresh reading (synthetic / test). The real device does this itself
   // via TCP, but exposing it here is convenient for nudging data during dev.
   pushAirlockData: (id: string, payload: { temperature?: number; bubbles_per_min?: number }) =>
