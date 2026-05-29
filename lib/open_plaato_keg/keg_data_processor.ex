@@ -223,7 +223,8 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
 
     # The airlock deep-sleeps between readings, so each wake-up is a new TCP
     # connection with a fresh GenServer state. Seed the previous count/time from
-    # DETS on the first packet of each connection so BPM can still be computed.
+    # DETS on the first packet of each connection so BPM can still be computed
+    # across the deep-sleep gap.
     state =
       if id != nil and state[:airlock_last_count] == nil do
         persisted = AirlockData.get(id)
@@ -231,7 +232,6 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
         state
         |> seed_integer(:airlock_last_count, persisted[:last_bubble_count])
         |> seed_integer(:airlock_last_count_time, persisted[:last_bubble_count_time])
-        |> seed_integer(:total_bubble_count, persisted[:total_bubble_count])
       else
         state
       end
@@ -240,9 +240,20 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
     {bpm, new_state} =
       maybe_compute_bpm(Keyword.get(data, :airlock_bubble_count), state)
 
-    # Accumulate lifetime bubble total across connections.
-    # Hardware resets its count each power-on, so we track the delta each packet.
-    {new_state, bubble_total} = accumulate_bubble_total(new_state, state[:airlock_last_count])
+    # Accumulate the lifetime bubble total.
+    #
+    # We DELIBERATELY read the base total from DETS every packet rather than
+    # caching it in GenServer state. Why: the manual reset endpoint
+    # (POST /api/airlocks/:id/reset) zeroes DETS but has no way to reach the
+    # live per-connection GenServer. If we used in-memory state as the base,
+    # the next packet within the same TCP wake-up would add a small delta to
+    # the stale pre-reset total and silently overwrite the zero in DETS.
+    # Reading the base from DETS makes resets stick because DETS IS the
+    # surface the reset endpoint modifies.
+    persisted_total = read_persisted_total(id)
+
+    {new_state, bubble_total} =
+      accumulate_bubble_total(new_state, state[:airlock_last_count], persisted_total)
 
     # Persist the updated count/time/total so the next wake-up connection can use it.
     if id != nil and new_state[:airlock_last_count] != state[:airlock_last_count] do
@@ -291,13 +302,26 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
     {:noreply, new_state}
   end
 
-  # Computes the delta from the previous count and adds it to the lifetime total.
-  # When the hardware resets (new_count < prev_count), the new_count itself is the delta.
-  defp accumulate_bubble_total(state, prev_count) do
+  @doc false
+  # Compute the delta between `state[:airlock_last_count]` and `prev_count`
+  # and add it to `base_total`. Returns `{state_with_cached_total, new_total}`.
+  #
+  # `base_total` is the source of truth for the running total — pass the
+  # value freshly read from DETS so an external reset (which zeroes DETS)
+  # actually sticks instead of being clobbered by stale in-memory state.
+  #
+  # When the hardware resets (new_count < prev_count), the new_count itself
+  # is treated as the delta — V100 wraps to 0 on each wake-up so we count
+  # the bubbles accumulated in the current wake.
+  #
+  # Public for testability (see test/airlock/bubble_total_accounting_test.exs);
+  # not part of the module's external API.
+  def accumulate_bubble_total(state, prev_count, base_total) do
     new_count = state[:airlock_last_count]
+    base = base_total || 0
 
     if new_count == nil or new_count == prev_count do
-      {state, state[:total_bubble_count]}
+      {state, base}
     else
       delta =
         cond do
@@ -306,8 +330,33 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
           true -> new_count
         end
 
-      new_total = (state[:total_bubble_count] || 0) + delta
+      new_total = base + delta
       {Map.put(state, :total_bubble_count, new_total), new_total}
+    end
+  end
+
+  # Reads the persisted lifetime bubble total from DETS for an airlock id.
+  # Returns an integer or nil. Tolerates the stored value being a string
+  # ("0", "4523" — that's how AirlockData.publish stores it) or already
+  # an integer (defensive).
+  defp read_persisted_total(nil), do: nil
+
+  defp read_persisted_total(id) do
+    case AirlockData.get(id)[:total_bubble_count] do
+      nil ->
+        nil
+
+      v when is_binary(v) ->
+        case Integer.parse(v) do
+          {n, _} -> n
+          :error -> nil
+        end
+
+      v when is_integer(v) ->
+        v
+
+      _ ->
+        nil
     end
   end
 
