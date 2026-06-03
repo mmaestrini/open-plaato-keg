@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Airlock, LogEntry, Range } from './api'
+import type { Airlock, Keg, LogEntry, Range } from './api'
 
 const STORAGE_KEY = 'plaato_demo'
 
@@ -121,5 +121,27 @@ export function mockAirlock(id?: string): Airlock {
     error: '0',
     total_bubble_count: '18432',
     last_bubble_count: '1204',
+  }
+}
+
+// ─── Mock keg / tap data ─────────────────────────────────────────────
+
+export const DEMO_KEG_ID = 'demo-keg-0000000000000000000000000000'
+
+export function mockKeg(id?: string): Keg {
+  return {
+    id: id || DEMO_KEG_ID,
+    my_label: 'Midnat IPA (demo)',
+    amount_left: '7.3',
+    beer_left_unit: 'litre',
+    percent_of_beer_left: '62.0',
+    keg_temperature: '4.2',
+    is_pouring: '0',
+    last_pour: '0.33',
+    my_beer_style: 'IPA',
+    my_og: '1.065',
+    my_fg: '1.012',
+    my_abv: '6.96',
+    my_keg_date: '01.04.2025',
   }
 }
