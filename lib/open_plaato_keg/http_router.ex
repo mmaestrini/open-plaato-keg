@@ -508,9 +508,6 @@ defmodule OpenPlaatoKeg.HttpRouter do
     DataLog.delete_for(:airlock, airlock_id)
     WebSocketHandler.publish_airlock(airlock_id, fields)
 
-    # TEMP DEBUG — remove after Per's reset issue is resolved
-    Logger.info("[RESET] #{airlock_id} — DETS after reset: #{inspect(AirlockData.get(airlock_id))}", [])
-
     json_response(conn, 200, %{status: "ok", command: "airlock_reset"})
   end
 
