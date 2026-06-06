@@ -257,6 +257,12 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
 
     # Persist the updated count/time/total so the next wake-up connection can use it.
     if id != nil and new_state[:airlock_last_count] != state[:airlock_last_count] do
+      # TEMP DEBUG — remove after Per's reset issue is resolved
+      Logger.info(
+        "[BUBBLE] #{id} — prev_count=#{state[:airlock_last_count]} new_count=#{new_state[:airlock_last_count]} dets_base=#{persisted_total} bubble_total=#{bubble_total}",
+        []
+      )
+
       AirlockData.publish(id, [
         {:last_bubble_count, to_string(new_state[:airlock_last_count])},
         {:last_bubble_count_time, to_string(new_state[:airlock_last_count_time])},
