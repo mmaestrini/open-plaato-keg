@@ -489,16 +489,22 @@ defmodule OpenPlaatoKeg.HttpRouter do
   end
 
   # Reset the cumulative bubble counter — used when the brewer starts a new
-  # batch. Zeros out total/last bubble counts and the BPM, stamps a fresh
+  # batch. Zeros the running total and BPM, stamps a fresh
   # `last_bubble_count_time` so the first packet after this gives a sensible
-  # BPM (computed against ~now, not against ancient state), and deletes the
-  # historical DataLog entries so the chart starts fresh for the new batch.
+  # BPM, and deletes the historical DataLog entries so the chart starts fresh.
+  #
+  # IMPORTANT: we deliberately do NOT reset `last_bubble_count`. That field
+  # holds the last V100 value the device sent and is used as `prev_count` for
+  # delta calculation. Zeroing it makes the next packet count the entire
+  # device-side V100 counter (e.g. 1451 bubbles at 326 BPM in one wake-up)
+  # as new bubbles, causing the total to immediately jump back to a large
+  # number. Leaving it intact means the next packet sees only the true delta
+  # (e.g. 4 new bubbles since the reset).
   post "api/airlocks/:id/reset" do
     airlock_id = conn.params["id"]
     now_ms = to_string(System.system_time(:millisecond))
 
     fields = [
-      {:last_bubble_count, "0"},
       {:last_bubble_count_time, now_ms},
       {:total_bubble_count, "0"},
       {:bubbles_per_min, "0.0"}
