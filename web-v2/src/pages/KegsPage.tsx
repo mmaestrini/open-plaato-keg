@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, fmt1, Keg } from '../lib/api'
+import { api, fmt1, openWS, Keg } from '../lib/api'
 import { useI18n, Key } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
 
@@ -18,6 +18,16 @@ export function KegsPage() {
     api.kegs()
       .then((k) => { setKegs(k); setErr(null) })
       .catch((e) => setErr(String(e)))
+  }, [demo])
+
+  useEffect(() => {
+    if (demo) return
+    const ws = openWS((msg) => {
+      if (msg.type !== undefined || typeof msg.id !== 'string') return
+      const update = msg as unknown as Keg
+      setKegs((prev) => prev && prev.map((k) => (k.id === update.id ? { ...k, ...update } : k)))
+    })
+    return () => ws.close()
   }, [demo])
 
   if (err) {

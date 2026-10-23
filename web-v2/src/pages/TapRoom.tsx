@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, fmt1, Keg, Tap } from '../lib/api'
+import { api, fmt1, openWS, Keg, Tap } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
 
@@ -43,6 +43,19 @@ export function TapRoom() {
         setErr(null)
       })
       .catch((e) => setErr(String(e)))
+  }, [demo])
+
+  // Live keg updates (weight, temperature, pouring) pushed over the WebSocket.
+  useEffect(() => {
+    if (demo) return
+    const ws = openWS((msg) => {
+      if (msg.type !== undefined || typeof msg.id !== 'string') return
+      const update = msg as unknown as Keg
+      setDisplays((prev) =>
+        prev && prev.map((d) => (d.keg?.id === update.id ? { ...d, keg: { ...d.keg, ...update } } : d)),
+      )
+    })
+    return () => ws.close()
   }, [demo])
 
   if (err) {
