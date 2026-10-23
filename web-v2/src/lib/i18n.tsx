@@ -24,6 +24,9 @@ const T = {
     nav_kegs: 'Kegs',
     nav_history: 'History',
     nav_settings: 'Settings',
+    nav_taps: 'Taps',
+    nav_beverages: 'Beverages',
+    nav_transfer: 'Transfer scales',
 
     page_breadcrumb_airlocks: 'Airlocks',
     page_status_fermenting: 'Fermenting',
@@ -176,6 +179,9 @@ const T = {
     nav_kegs: 'Fustager',
     nav_history: 'Historik',
     nav_settings: 'Indstillinger',
+    nav_taps: 'Haner',
+    nav_beverages: 'Drikkevarer',
+    nav_transfer: 'Overførselsvægte',
 
     page_breadcrumb_airlocks: 'Gærlåse',
     page_status_fermenting: 'Gærer',

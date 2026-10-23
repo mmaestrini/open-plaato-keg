@@ -34,6 +34,9 @@ export function Header() {
           <RouterNavLink to="/">{t('nav_tap_room')}</RouterNavLink>
           <RouterNavLink to="/airlocks">{t('nav_cellar')}</RouterNavLink>
           <RouterNavLink to="/kegs">{t('nav_kegs')}</RouterNavLink>
+          <RouterNavLink to="/taps">{t('nav_taps')}</RouterNavLink>
+          <RouterNavLink to="/beverages">{t('nav_beverages')}</RouterNavLink>
+          <RouterNavLink to="/transfer-scales">{t('nav_transfer')}</RouterNavLink>
           <RouterNavLink to="/history">{t('nav_history')}</RouterNavLink>
           <RouterNavLink to="/settings">{t('nav_settings')}</RouterNavLink>
         </nav>
