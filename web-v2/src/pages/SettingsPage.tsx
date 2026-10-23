@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useI18n, Lang, Key } from '../lib/i18n'
+import { Link } from 'react-router-dom'
+import { UpdateSection } from '../components/UpdateSection'
 import { loadNotifSettings, saveNotifSettings, NotifSettings } from '../lib/notifications'
 
 // ─────────────────────────────────────────────────────────────────────
@@ -24,6 +26,8 @@ export function SettingsPage() {
         <DisplaySection />
         <NotificationsSection />
         <BrewfatherSection />
+        <AirlockLinkSection />
+        <UpdateSection />
         <AboutSection />
       </div>
     </main>
@@ -273,6 +277,23 @@ function BrewfatherSection() {
           {saveState === 'saving' ? '…' : t('settings_bf_connect')}
         </button>
       </div>
+    </Section>
+  )
+}
+
+// ─── Airlock setup link ───────────────────────────────────────────────
+
+function AirlockLinkSection() {
+  const { lang } = useI18n()
+  const da = lang === 'da'
+  return (
+    <Section
+      title={da ? 'Airlocks' : 'Airlocks'}
+      sub={da ? 'Aktivér airlocks, navngiv dem og forbind Grainfather/Brewfather.' : 'Enable airlocks, name them and connect Grainfather/Brewfather.'}
+    >
+      <Link to="/airlocks/setup" className="btn-primary-pers inline-block">
+        {da ? 'Åbn airlock-opsætning →' : 'Open airlock setup →'}
+      </Link>
     </Section>
   )
 }

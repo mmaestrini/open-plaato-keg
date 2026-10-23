@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, fmt1, openWS, Keg } from '../lib/api'
 import { useI18n, Key } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
+import { KegScaleSetup } from '../components/KegScaleSetup'
 
 // ─────────────────────────────────────────────────────────────────────
 // Kegs page — live hardware data + editable batch details per keg.
@@ -16,7 +17,7 @@ export function KegsPage() {
   useEffect(() => {
     if (demo) { setKegs([mockKeg()]); return }
     api.kegs()
-      .then((k) => { setKegs(k); setErr(null) })
+      .then((k) => { setKegs(sortKegs(k)); setErr(null) })
       .catch((e) => setErr(String(e)))
   }, [demo])
 
@@ -80,6 +81,18 @@ export function KegsPage() {
             keg={keg}
             index={i}
             isDemoData={demo}
+            isFirst={i === 0}
+            isLast={i === kegs.length - 1}
+            onMove={(d) => {
+              const next = [...kegs]
+              ;[next[i], next[i + d]] = [next[i + d], next[i]]
+              setKegs(next)
+              if (!demo) void fetch('/api/kegs/order', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ordered_ids: next.map((k) => k.id) }),
+              })
+            }}
+            onDeleted={() => setKegs((prev) => prev && prev.filter((k) => k.id !== keg.id))}
             onUpdate={(updated) =>
               setKegs((prev) => prev ? prev.map((k) => (k.id === updated.id ? updated : k)) : prev)
             }
@@ -89,6 +102,15 @@ export function KegsPage() {
       <KegSetupGuide />
     </main>
   )
+}
+
+const sortKegs = (ks: Keg[]) => {
+  const o = (k: Keg) => parseInt((k as Keg & { my_sort_order?: string }).my_sort_order ?? '', 10)
+  return [...ks].sort((a, b) => {
+    const x = o(a), y = o(b)
+    if (isNaN(x) !== isNaN(y)) return isNaN(x) ? 1 : -1
+    return x !== y && !isNaN(x) ? x - y : a.id.localeCompare(b.id)
+  })
 }
 
 function KegSetupGuide() {
@@ -110,10 +132,14 @@ type KegCardProps = {
   keg: Keg
   index: number
   isDemoData: boolean
+  isFirst: boolean
+  isLast: boolean
+  onMove: (delta: -1 | 1) => void
+  onDeleted: () => void
   onUpdate: (keg: Keg) => void
 }
 
-function KegCard({ keg, index, isDemoData, onUpdate }: KegCardProps) {
+function KegCard({ keg, index, isDemoData, isFirst, isLast, onMove, onDeleted, onUpdate }: KegCardProps) {
   const { t } = useI18n()
 
   const pct = parseFloat(keg.percent_of_beer_left ?? '0')
@@ -219,10 +245,16 @@ function KegCard({ keg, index, isDemoData, onUpdate }: KegCardProps) {
         )}
       </div>
 
-      {/* ID */}
-      <p className="mt-0.5 font-mono text-[0.65rem] text-text-dim">
-        {keg.id.slice(0, 12)}…
-      </p>
+      {/* ID + reorder */}
+      <div className="mt-0.5 flex items-center justify-between">
+        <p className="font-mono text-[0.65rem] text-text-dim">{keg.id.slice(0, 12)}…</p>
+        {!isDemoData && (
+          <span className="flex gap-1">
+            <button onClick={() => onMove(-1)} disabled={isFirst} aria-label="Move up" className="btn-pers px-2 py-0.5 text-xs disabled:opacity-30">↑</button>
+            <button onClick={() => onMove(1)} disabled={isLast} aria-label="Move down" className="btn-pers px-2 py-0.5 text-xs disabled:opacity-30">↓</button>
+          </span>
+        )}
+      </div>
 
       {/* Fill bar */}
       <div className="mt-4">
@@ -309,6 +341,8 @@ function KegCard({ keg, index, isDemoData, onUpdate }: KegCardProps) {
           </button>
         )}
       </div>
+
+      <KegScaleSetup keg={keg} disabled={isDemoData} onDeleted={onDeleted} />
     </div>
   )
 }
