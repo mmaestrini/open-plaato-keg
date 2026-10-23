@@ -108,6 +108,12 @@ export const api = {
 
   // ── Taps ────────────────────────────────────────────────────────────
   taps: () => json<Tap[]>('/api/taps'),
+  // The beer name is one thing: keg label and linked tap name are kept identical.
+  // POST /api/taps/:id rewrites every field, so send the whole tap back.
+  renameBeer: async (kegId: string | null, tap: Tap | null, name: string) => {
+    if (kegId) await api.setKegLabel(kegId, name)
+    if (tap) await json(`/api/taps/${tap.id}`, { method: 'POST', body: JSON.stringify({ ...tap, name }) })
+  },
 
   // ── App config ──────────────────────────────────────────────────────
   config: () => json<AppConfig>('/api/config'),

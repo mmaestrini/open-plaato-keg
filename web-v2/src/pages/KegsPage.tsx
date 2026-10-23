@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, fmt1, openWS, Keg } from '../lib/api'
+import { api, fmt1, openWS, Keg, Tap } from '../lib/api'
 import { useI18n, Key } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
 import { KegScaleSetup } from '../components/KegScaleSetup'
@@ -12,10 +12,12 @@ export function KegsPage() {
   const { t } = useI18n()
   const { demo } = useDemoMode()
   const [kegs, setKegs] = useState<Keg[] | null>(null)
+  const [taps, setTaps] = useState<Tap[]>([])
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
     if (demo) { setKegs([mockKeg()]); return }
+    api.taps().then(setTaps).catch(() => {})
     api.kegs()
       .then((k) => { setKegs(sortKegs(k)); setErr(null) })
       .catch((e) => setErr(String(e)))
@@ -79,6 +81,7 @@ export function KegsPage() {
           <KegCard
             key={keg.id}
             keg={keg}
+            tap={taps.find((t) => t.keg_id === keg.id) ?? null}
             index={i}
             isDemoData={demo}
             isFirst={i === 0}
@@ -130,6 +133,7 @@ function KegSetupGuide() {
 
 type KegCardProps = {
   keg: Keg
+  tap: Tap | null
   index: number
   isDemoData: boolean
   isFirst: boolean
@@ -139,7 +143,7 @@ type KegCardProps = {
   onUpdate: (keg: Keg) => void
 }
 
-function KegCard({ keg, index, isDemoData, isFirst, isLast, onMove, onDeleted, onUpdate }: KegCardProps) {
+function KegCard({ keg, tap, index, isDemoData, isFirst, isLast, onMove, onDeleted, onUpdate }: KegCardProps) {
   const { t } = useI18n()
 
   const pct = parseFloat(keg.percent_of_beer_left ?? '0')
@@ -152,7 +156,7 @@ function KegCard({ keg, index, isDemoData, isFirst, isLast, onMove, onDeleted, o
 
   const beginEditLabel = () => {
     if (isDemoData) return
-    setLabelDraft(keg.my_label ?? '')
+    setLabelDraft(keg.my_label || tap?.name || '')
     setEditingLabel(true)
   }
   const cancelEditLabel = () => { setEditingLabel(false); setLabelDraft('') }
@@ -160,7 +164,7 @@ function KegCard({ keg, index, isDemoData, isFirst, isLast, onMove, onDeleted, o
     if (isDemoData) return
     setSavingLabel(true)
     try {
-      await api.setKegLabel(keg.id, labelDraft.trim())
+      await api.renameBeer(keg.id, tap, labelDraft.trim())
       onUpdate({ ...keg, my_label: labelDraft.trim() })
       setEditingLabel(false)
     } catch (e) { alert('Rename failed: ' + String(e)) }
@@ -194,7 +198,7 @@ function KegCard({ keg, index, isDemoData, isFirst, isLast, onMove, onDeleted, o
     }
   }
 
-  const displayName = keg.my_label || t('keg_unnamed', { n: index + 1 })
+  const displayName = keg.my_label || tap?.name || t('keg_unnamed', { n: index + 1 })
 
   return (
     <div className="card-pers relative overflow-hidden">

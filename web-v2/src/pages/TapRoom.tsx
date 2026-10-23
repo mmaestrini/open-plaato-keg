@@ -102,7 +102,20 @@ export function TapRoom() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {displays.map(({ keg, tap }) => (
-          <KegTapCard key={keg?.id ?? tap?.id} keg={keg} tap={tap} />
+          <KegTapCard
+            key={keg?.id ?? tap?.id}
+            keg={keg}
+            tap={tap}
+            onRenamed={(name) =>
+              setDisplays((prev) =>
+                prev && prev.map((d) =>
+                  d.keg?.id === keg?.id && d.tap?.id === tap?.id
+                    ? { keg: d.keg && { ...d.keg, my_label: name }, tap: d.tap && { ...d.tap, name } }
+                    : d,
+                ),
+              )
+            }
+          />
         ))}
       </div>
     </main>
@@ -111,10 +124,22 @@ export function TapRoom() {
 
 // ─── KegTapCard ───────────────────────────────────────────────────────
 
-function KegTapCard({ keg, tap }: { keg: Keg | null; tap: Tap | null }) {
+function KegTapCard({ keg, tap, onRenamed }: { keg: Keg | null; tap: Tap | null; onRenamed: (name: string) => void }) {
   const { t } = useI18n()
 
-  const beerName  = tap?.name  || keg?.my_label || t('taproom_unnamed')
+  const beerName  = keg?.my_label || tap?.name || t('taproom_unnamed')
+  const [name, setName] = useState<string | null>(null) // non-null = editing
+  const [saving, setSaving] = useState(false)
+  const saveName = async () => {
+    if (name === null) return
+    setSaving(true)
+    try {
+      await api.renameBeer(keg?.id ?? null, tap, name.trim())
+      onRenamed(name.trim())
+      setName(null)
+    } catch (e) { alert('Rename failed: ' + String(e)) }
+    finally { setSaving(false) }
+  }
   const brewery   = tap?.brewery || ''
   const style     = tap?.style || keg?.my_beer_style || ''
   const abv       = tap?.abv   || keg?.my_abv     || ''
@@ -138,7 +163,32 @@ function KegTapCard({ keg, tap }: { keg: Keg | null; tap: Tap | null }) {
       {/* Header */}
       <div className="mt-2 flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-serif text-2xl font-semibold leading-tight">{beerName}</h2>
+          {name !== null ? (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void saveName(); else if (e.key === 'Escape') setName(null) }}
+                maxLength={40}
+                disabled={saving}
+                className="input-pers flex-1 font-serif text-lg"
+              />
+              <button onClick={() => void saveName()} disabled={saving} className="btn-primary-pers py-1.5 text-xs disabled:opacity-50">
+                {saving ? '…' : t('save')}
+              </button>
+              <button onClick={() => setName(null)} disabled={saving} className="btn-pers py-1.5 text-xs">{t('cancel')}</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setName(keg?.my_label || tap?.name || '')}
+              title={t('keg_rename')}
+              className="group inline-flex items-center gap-2 text-left"
+            >
+              <h2 className="font-serif text-2xl font-semibold leading-tight">{beerName}</h2>
+              <span aria-hidden className="text-base text-text-muted opacity-60 transition-colors group-hover:text-accent group-hover:opacity-100">✎</span>
+            </button>
+          )}
           {brewery && (
             <p className="mt-0.5 text-sm italic text-text-muted">{brewery}</p>
           )}
