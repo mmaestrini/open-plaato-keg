@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { api, Airlock, LogEntry, Range, openWS } from '../lib/api'
+import { api, fmt1, Airlock, LogEntry, Range, openWS } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import { useDemoMode, mockHistory, mockAirlock, DEMO_AIRLOCK_ID } from '../lib/demo'
 import { useThemeColors } from '../lib/themeColors'
@@ -273,7 +273,7 @@ export function AirlockDetail({ airlockId, onLabelChange }: Props) {
         <KpiCard
           label={t('kpi_temperature')}
           unit="°C"
-          value={airlock.temperature ?? '—'}
+          value={fmt1(airlock.temperature) ?? '—'}
           delta={t('stable')}
         />
       </section>

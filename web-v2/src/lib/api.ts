@@ -63,6 +63,10 @@ export type LogEntry = {
   bubbles_per_min?: string
 }
 
+// Sensor values arrive with 3 decimals; show at most one.
+export const fmt1 = (v?: string | null) =>
+  v != null && v !== '' && !isNaN(Number(v)) ? Number(v).toFixed(1) : v ?? undefined
+
 export type Range = '1h' | '24h' | '3d' | '7d' | '30d'
 
 async function json<T>(url: string, init?: RequestInit): Promise<T> {

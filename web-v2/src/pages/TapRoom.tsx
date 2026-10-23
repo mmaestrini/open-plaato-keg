@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, Keg, Tap } from '../lib/api'
+import { api, fmt1, Keg, Tap } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
 
@@ -14,7 +14,7 @@ import { useDemoMode, mockKeg } from '../lib/demo'
 // ─────────────────────────────────────────────────────────────────────
 
 type TapDisplay = {
-  keg: Keg
+  keg: Keg | null // null = tap configured but keg not connected yet
   tap: Tap | null
 }
 
@@ -36,7 +36,10 @@ export function TapRoom() {
           keg,
           tap: taps.find((t) => t.keg_id === keg.id) ?? null,
         }))
-        setDisplays(merged)
+        const orphans: TapDisplay[] = taps
+          .filter((tap) => !kegs.some((k) => k.id === tap.keg_id))
+          .map((tap) => ({ keg: null, tap }))
+        setDisplays([...merged, ...orphans])
         setErr(null)
       })
       .catch((e) => setErr(String(e)))
@@ -86,7 +89,7 @@ export function TapRoom() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {displays.map(({ keg, tap }) => (
-          <KegTapCard key={keg.id} keg={keg} tap={tap} />
+          <KegTapCard key={keg?.id ?? tap?.id} keg={keg} tap={tap} />
         ))}
       </div>
     </main>
@@ -95,21 +98,21 @@ export function TapRoom() {
 
 // ─── KegTapCard ───────────────────────────────────────────────────────
 
-function KegTapCard({ keg, tap }: { keg: Keg; tap: Tap | null }) {
+function KegTapCard({ keg, tap }: { keg: Keg | null; tap: Tap | null }) {
   const { t } = useI18n()
 
-  const beerName  = tap?.name  || keg.my_label  || t('taproom_unnamed')
+  const beerName  = tap?.name  || keg?.my_label || t('taproom_unnamed')
   const brewery   = tap?.brewery || ''
-  const style     = tap?.style || keg.my_beer_style || ''
-  const abv       = tap?.abv   || keg.my_abv     || ''
+  const style     = tap?.style || keg?.my_beer_style || ''
+  const abv       = tap?.abv   || keg?.my_abv     || ''
   const ibu       = tap?.ibu   || ''
   const tapColor  = tap?.color || '#d4924a'
-  const isPouring = keg.is_pouring === '1'
+  const isPouring = keg?.is_pouring === '1'
 
-  const pct = parseFloat(keg.percent_of_beer_left ?? '0')
-  const amount = keg.amount_left
-  const unit   = keg.beer_left_unit ?? 'L'
-  const temp   = keg.keg_temperature
+  const pct = parseFloat(keg?.percent_of_beer_left ?? '0')
+  const amount = keg?.amount_left
+  const unit   = keg?.beer_left_unit ?? 'L'
+  const temp   = fmt1(keg?.keg_temperature)
 
   return (
     <div className="card-pers relative overflow-hidden">

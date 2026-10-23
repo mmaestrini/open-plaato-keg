@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, Keg } from '../lib/api'
+import { api, fmt1, Keg } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
 
@@ -220,7 +220,7 @@ function KegCard({ keg, index, isDemoData, onUpdate }: KegCardProps) {
       {/* Live stats */}
       <div className="mt-4 flex flex-wrap gap-4 border-b border-border pb-4">
         {keg.keg_temperature && (
-          <LiveStat label={t('keg_temperature')} value={`${keg.keg_temperature} °C`} />
+          <LiveStat label={t('keg_temperature')} value={`${fmt1(keg.keg_temperature)} °C`} />
         )}
         {keg.last_pour && keg.last_pour !== '0' && (
           <LiveStat label={t('keg_last_pour')} value={`${keg.last_pour} ${keg.beer_left_unit ?? 'L'}`} />
