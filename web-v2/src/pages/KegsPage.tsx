@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, fmt1, Keg } from '../lib/api'
-import { useI18n } from '../lib/i18n'
+import { useI18n, Key } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
 
 // ─────────────────────────────────────────────────────────────────────
@@ -48,6 +48,7 @@ export function KegsPage() {
             {t('no_kegs_sub')}
           </p>
         </div>
+        <KegSetupGuide />
       </main>
     )
   }
@@ -75,7 +76,21 @@ export function KegsPage() {
           />
         ))}
       </div>
+      <KegSetupGuide />
     </main>
+  )
+}
+
+function KegSetupGuide() {
+  const { t } = useI18n()
+  const steps = [1, 2, 3, 4, 5, 6, 7].map((n) => `kegsetup_${n}` as Key)
+  return (
+    <details className="card-pers mx-auto mt-8 max-w-2xl">
+      <summary className="cursor-pointer font-serif text-lg font-semibold">{t('kegsetup_title')}</summary>
+      <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-text-muted">
+        {steps.map((k) => <li key={k}>{t(k)}</li>)}
+      </ol>
+    </details>
   )
 }
 

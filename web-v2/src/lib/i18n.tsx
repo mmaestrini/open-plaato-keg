@@ -117,6 +117,14 @@ const T = {
     keg_saving: 'Saving…',
     keg_saved: 'Saved ✓',
     no_kegs: 'No kegs connected yet.',
+    kegsetup_title: 'How to add a keg',
+    kegsetup_1: 'Power on the new Plaato Keg. It creates a Wi-Fi hotspot named PLAATO-XXXXX.',
+    kegsetup_2: 'Connect your phone or laptop to that hotspot and open http://192.168.4.1 in a browser.',
+    kegsetup_3: 'Enter your Wi-Fi name and password (2.4 GHz only).',
+    kegsetup_4: 'Auth token: make up a unique 32-character code using only 0-9 and a-f (e.g. 00000000000000000000000000000002). It must differ from your other kegs.',
+    kegsetup_5: 'Host: the IP address of this server on your home network. Port: 1234.',
+    kegsetup_6: 'Save. After a minute the keg appears on this page.',
+    kegsetup_7: 'To show it in the Tap Room, create a tap for it in Tap Setup (old interface) and pick the keg.',
     no_kegs_sub:
       'Connect a Plaato Keg and configure it to point at this server. It will appear here once the first data packet arrives.',
 
@@ -261,6 +269,14 @@ const T = {
     keg_saving: 'Gemmer…',
     keg_saved: 'Gemt ✓',
     no_kegs: 'Ingen fustager er forbundet endnu.',
+    kegsetup_title: 'Sådan tilføjer du en fustage',
+    kegsetup_1: 'Tænd den nye Plaato Keg. Den opretter et Wi-Fi hotspot ved navn PLAATO-XXXXX.',
+    kegsetup_2: 'Forbind din telefon eller computer til det hotspot, og åbn http://192.168.4.1 i en browser.',
+    kegsetup_3: 'Indtast dit Wi-Fi navn og din adgangskode (kun 2,4 GHz).',
+    kegsetup_4: 'Auth token: find på en unik kode på 32 tegn med kun 0-9 og a-f (fx 00000000000000000000000000000002). Den skal være forskellig fra dine andre fustager.',
+    kegsetup_5: 'Host: denne servers IP-adresse på dit hjemmenetværk. Port: 1234.',
+    kegsetup_6: 'Gem. Efter et minut dukker fustagen op på denne side.',
+    kegsetup_7: 'For at vise den i Tap Room skal du oprette en tap til den i Tap Setup (gammel brugerflade) og vælge fustagen.',
     no_kegs_sub:
       'Tilslut en Plaato Keg og konfigurer den til at pege på denne server. Den vil dukke op her, så snart første datapakke ankommer.',
 
