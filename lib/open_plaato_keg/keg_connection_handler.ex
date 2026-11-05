@@ -17,7 +17,7 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
   # Why do connections end? These two tell us whether the SERVER closed an
   # idle connection (read timeout) or the socket errored, vs the keg closing.
   def handle_timeout(_socket, state) do
-    Logger.warning("Keg #{state.keg_id || "(unidentified)"} read timeout after #{age(state)}s idle; closing")
+    Logger.warning("Keg #{state.keg_id || "(unidentified)"} read timeout: no data for the timeout period (connection age #{age(state)}s); closing")
     {:close, state}
   end
 

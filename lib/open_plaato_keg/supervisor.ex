@@ -34,7 +34,12 @@ defmodule OpenPlaatoKeg.Supervisor do
 
     Logger.info("TCP keg listener starting on port #{port}...")
 
-    {ThousandIsland, port: port, handler_module: OpenPlaatoKeg.KegConnectionHandler}
+    # read_timeout: ThousandIsland closes a connection after this long without data
+    # (default 60 s). The scale keg stays connected but silent for longer than that
+    # when its weight is steady, so the default made us drop live kegs and the
+    # display froze until the keg reconnected (tare / moving the keg). 15 min.
+    {ThousandIsland,
+     port: port, handler_module: OpenPlaatoKeg.KegConnectionHandler, read_timeout: 900_000}
   end
 
   defp http_router_spec do
