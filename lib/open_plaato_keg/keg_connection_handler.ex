@@ -10,9 +10,23 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
 
   def handle_connection(_socket, _state) do
     {:ok, pid} = OpenPlaatoKeg.KegDataProcessor.start_link(%{})
-    state = %{keg_data_processor: pid, keg_id: nil}
+    state = %{keg_data_processor: pid, keg_id: nil, connected_at: System.monotonic_time(:second)}
     {:continue, state}
   end
+
+  # Why do connections end? These two tell us whether the SERVER closed an
+  # idle connection (read timeout) or the socket errored, vs the keg closing.
+  def handle_timeout(_socket, state) do
+    Logger.warning("Keg #{state.keg_id || "(unidentified)"} read timeout after #{age(state)}s idle; closing")
+    {:close, state}
+  end
+
+  def handle_error(reason, _socket, state) do
+    Logger.warning("Keg #{state.keg_id || "(unidentified)"} socket error after #{age(state)}s: #{inspect(reason)}")
+    {:close, state}
+  end
+
+  defp age(%{connected_at: t}), do: System.monotonic_time(:second) - t
 
   def handle_data(data, socket, state) do
     # Acknowledge Blynk-style packets, echoing the msg_id from the incoming frame.
@@ -39,7 +53,7 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
 
   def handle_close(_socket, state) do
     if state.keg_id do
-      Logger.info("Keg #{state.keg_id} disconnected")
+      Logger.info("Keg #{state.keg_id} disconnected after #{age(state)}s")
 
       # Unregister the socket (only affects this process's registration)
       Registry.unregister(OpenPlaatoKeg.KegSocketRegistry, state.keg_id)

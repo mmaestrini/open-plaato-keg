@@ -23,6 +23,8 @@ export type Keg = {
   percent_of_beer_left?: string
   keg_temperature?: string
   is_pouring?: string
+  last_seen?: string        // ms epoch: any frame from the keg (heartbeats too)
+  last_weight_at?: string   // ms epoch: last frame that carried a weight
   last_pour?: string
   last_pour_string?: string
   my_beer_style?: string
@@ -130,16 +132,24 @@ export type WSMessage =
   | { type: 'airlock'; data: Airlock }
   | (Record<string, unknown> & { type?: undefined })  // keg updates have no type wrapper
 
-export function openWS(onMessage: (msg: WSMessage) => void): WebSocket {
+export function openWS(onMessage: (msg: WSMessage) => void): { close: () => void } {
   // In dev vite proxies /ws; in prod nginx does the same. Same-origin.
+  // Reconnects every 3 s if the socket drops (server restart, Wi-Fi blip), so a
+  // page left open never silently stops updating.
   const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-  const ws = new WebSocket(`${proto}://${location.host}/ws`)
-  ws.addEventListener('message', (ev) => {
-    try {
-      onMessage(JSON.parse(ev.data))
-    } catch {
-      /* ignore non-JSON frames */
-    }
-  })
-  return ws
+  let ws: WebSocket | null = null
+  let closed = false
+  const connect = () => {
+    ws = new WebSocket(`${proto}://${location.host}/ws`)
+    ws.addEventListener('message', (ev) => {
+      try {
+        onMessage(JSON.parse(ev.data))
+      } catch {
+        /* ignore non-JSON frames */
+      }
+    })
+    ws.addEventListener('close', () => { if (!closed) setTimeout(connect, 3000) })
+  }
+  connect()
+  return { close: () => { closed = true; ws?.close() } }
 }

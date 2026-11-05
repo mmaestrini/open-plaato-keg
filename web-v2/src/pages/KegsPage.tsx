@@ -283,6 +283,7 @@ function KegCard({ keg, tap, index, isDemoData, isFirst, isLast, onMove, onDelet
         {keg.keg_temperature && (
           <LiveStat label={t('keg_temperature')} value={`${fmt1(keg.keg_temperature)} °C`} />
         )}
+        <Freshness keg={keg} />
         {keg.last_pour && keg.last_pour !== '0' && (
           <LiveStat label={t('keg_last_pour')} value={`${keg.last_pour} ${keg.beer_left_unit ?? 'L'}`} />
         )}
@@ -348,6 +349,33 @@ function KegCard({ keg, tap, index, isDemoData, isFirst, isLast, onMove, onDelet
 
       <KegScaleSetup keg={keg} disabled={isDemoData} onDeleted={onDeleted} />
     </div>
+  )
+}
+
+// "Scale stopped updating" diagnostics: separates a silent/disconnected keg from
+// one that is connected (heartbeats) but not sending weight.
+function ago(ms?: string, now = Date.now()): string {
+  const t = Number(ms)
+  if (!t) return '—'
+  const s = Math.max(0, Math.round((now - t) / 1000))
+  if (s < 90) return `${s}s`
+  if (s < 5400) return `${Math.round(s / 60)} min`
+  return `${(s / 3600).toFixed(1)} h`
+}
+
+function Freshness({ keg }: { keg: Keg }) {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const i = setInterval(() => setNow(Date.now()), 5000)
+    return () => clearInterval(i)
+  }, [])
+  if (!keg.last_seen) return null
+  const silent = now - Number(keg.last_seen) > 120_000
+  return (
+    <>
+      <LiveStat label="Last contact" value={`${ago(keg.last_seen, now)} ago${silent ? ' ⚠' : ''}`} />
+      <LiveStat label="Last weight" value={`${ago(keg.last_weight_at, now)} ago`} />
+    </>
   )
 }
 

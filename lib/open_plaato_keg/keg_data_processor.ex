@@ -21,10 +21,30 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
   end
 
   def handle_cast({:keg_data, data}, state) do
-    data
-    |> decode()
-    |> process(state)
+    decoded = decode(data)
+    {:noreply, new_state} = process(decoded, state)
+    stamp_activity(decoded, new_state)
+    {:noreply, new_state}
   end
+
+  # Diagnostics for "scale stops updating": `last_seen` moves on EVERY frame from
+  # a keg (heartbeats included) so the UI can tell "device silent / disconnected"
+  # from "device alive but sending no weight". `last_weight_at` moves only when
+  # a frame carries amount_left. Both are ms since epoch, stored as strings like
+  # every other keg field.
+  defp stamp_activity(decoded, %{device_type: :keg, id: id}) when is_binary(id) do
+    now = to_string(System.system_time(:millisecond))
+    fields = [last_seen: now]
+
+    fields =
+      if is_list(decoded) and Keyword.keyword?(decoded) and Keyword.has_key?(decoded, :amount_left),
+        do: [{:last_weight_at, now} | fields],
+        else: fields
+
+    KegData.publish(id, fields)
+  end
+
+  defp stamp_activity(_decoded, _state), do: :ok
 
   defp process([], state), do: {:noreply, state}
 
