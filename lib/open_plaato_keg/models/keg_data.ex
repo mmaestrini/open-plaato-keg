@@ -49,6 +49,7 @@ defmodule OpenPlaatoKeg.Models.KegData do
       |> Enum.reject(fn {key, _value} -> key == :calibration end)
       |> Map.new()
       |> Map.put(:id, id)
+      |> with_percent()
 
     # Always derive beer_left_unit from unit + measure_unit whenever unit is known.
     # This ensures the displayed unit label is always consistent with the configured
@@ -61,6 +62,21 @@ defmodule OpenPlaatoKeg.Models.KegData do
       Map.put(data, :beer_left_unit, derive_beer_left_unit(unit, measure, keg_mode))
     else
       data
+    end
+  end
+
+  @doc false
+  # The keg's own percent pin (V48) is only re-sent when the weight changes and
+  # is computed against whatever max volume the keg had at that moment, so it
+  # goes stale (a full keg showed 30% for days while amount_left said 6.08 of
+  # 5.5 kg). amount_left is reliable, so derive the percent from it.
+  def with_percent(data) do
+    with {amount, _} <- Float.parse(to_string(data[:amount_left] || "")),
+         {max, _} when max > 0 <- Float.parse(to_string(data[:max_keg_volume] || "")) do
+      pct = (amount / max * 100) |> max(0.0) |> min(100.0) |> Float.round(1)
+      Map.put(data, :percent_of_beer_left, :erlang.float_to_binary(pct, decimals: 1))
+    else
+      _ -> data
     end
   end
 
