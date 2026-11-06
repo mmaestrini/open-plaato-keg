@@ -64,7 +64,7 @@ const T = {
 
     reset_counter: 'Reset counter',
     reset_confirm:
-      'Reset bubble counter and clear chart history for this airlock? This cannot be undone.',
+      'Reset the bubble counter for this airlock? Chart history is kept.',
 
     rename_airlock: 'Rename airlock',
     label_placeholder: 'Friendly name (e.g. IPA)',
@@ -219,7 +219,7 @@ const T = {
 
     reset_counter: 'Nulstil tæller',
     reset_confirm:
-      'Nulstil bobletælleren og slet diagramhistorikken for denne gærlås? Dette kan ikke fortrydes.',
+      'Nulstil bobletælleren for denne gærlås? Diagramhistorikken bevares.',
 
     rename_airlock: 'Omdøb gærlås',
     label_placeholder: 'Kaldenavn (f.eks. IPA)',
