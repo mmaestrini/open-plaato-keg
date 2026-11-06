@@ -257,8 +257,10 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
       end
 
     # V100 sends cumulative count since power-on. BPM = delta / elapsed_minutes.
-    {bpm, new_state} =
-      maybe_compute_bpm(Keyword.get(data, :airlock_bubble_count), state)
+    count = Keyword.get(data, :airlock_bubble_count)
+    count = if implausible_count?(count, state), do: nil, else: count
+
+    {bpm, new_state} = maybe_compute_bpm(count, state)
 
     # Accumulate the lifetime bubble total.
     #
@@ -386,6 +388,28 @@ defmodule OpenPlaatoKeg.KegDataProcessor do
     case Integer.parse(value) do
       {int, _} -> Map.put(state, key, int)
       :error -> state
+    end
+  end
+
+  # A real airlock tops out far below this; above it the V100 value is a glitch
+  # (seen 2026-11-06: one packet jumped the count by ~430k, logging 129503 bpm
+  # and adding 430k to the total).
+  @max_bpm 1000
+
+  def max_bpm, do: @max_bpm
+
+  @doc false
+  # Public for testing. True when the count rose faster than @max_bpm since the
+  # last accepted count; such a packet is ignored (not stored, not totalled).
+  def implausible_count?(count_str, state) do
+    with {new_count, _} <- Integer.parse(to_string(count_str || "")),
+         prev when is_integer(prev) <- state[:airlock_last_count],
+         prev_time when is_integer(prev_time) <- state[:airlock_last_count_time],
+         true <- new_count > prev do
+      elapsed_min = max((System.system_time(:millisecond) - prev_time) / 60_000.0, 1.0)
+      (new_count - prev) / elapsed_min > @max_bpm
+    else
+      _ -> false
     end
   end
 

@@ -56,8 +56,21 @@ defmodule OpenPlaatoKeg.Models.DataLog do
         results
         |> Enum.sort_by(fn {ts, _} -> ts end)
         |> Enum.map(fn {ts, data} -> Map.put(data, "timestamp", ts) end)
+        |> drop_glitches(device_type)
     end
   end
+
+  # Hide airlock BPM glitches already in the log (see KegDataProcessor.max_bpm/0).
+  defp drop_glitches(entries, :airlock) do
+    Enum.reject(entries, fn e ->
+      case Float.parse(to_string(e["bubbles_per_min"] || "")) do
+        {bpm, _} -> bpm > OpenPlaatoKeg.KegDataProcessor.max_bpm()
+        :error -> false
+      end
+    end)
+  end
+
+  defp drop_glitches(entries, _), do: entries
 
   @doc """
   Serialise `entries` (as returned by `get/4`) to a CSV string.
