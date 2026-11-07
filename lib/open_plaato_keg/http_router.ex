@@ -294,6 +294,35 @@ defmodule OpenPlaatoKeg.HttpRouter do
     json_response(conn, 200, %{status: "ok", command: "label", value: value})
   end
 
+  # Shelly plug that powers this keg; PlugWatchdog power-cycles it when the keg goes silent.
+  post "api/kegs/:id/plug" do
+    keg_id = conn.params["id"]
+    value = (conn.body_params || %{})["value"] |> Kernel.to_string() |> String.trim()
+
+    if value == "" or match?({:ok, _}, :inet.parse_ipv4strict_address(String.to_charlist(value))) do
+      KegData.publish(keg_id, [{:my_plug_ip, value}])
+      WebSocketHandler.publish(keg_id, [])
+      json_response(conn, 200, %{status: "ok", command: "plug", value: value})
+    else
+      json_response(conn, 400, %{error: "Not an IPv4 address: #{value}"})
+    end
+  end
+
+  post "api/kegs/:id/plug/cycle" do
+    keg_id = conn.params["id"]
+
+    case KegData.get(keg_id)[:my_plug_ip] do
+      ip when is_binary(ip) and ip != "" ->
+        case OpenPlaatoKeg.PlugWatchdog.cycle(keg_id, ip, "manual test") do
+          :ok -> json_response(conn, 200, %{status: "ok", command: "plug_cycle"})
+          {:error, e} -> json_response(conn, 502, %{error: e})
+        end
+
+      _ ->
+        json_response(conn, 400, %{error: "No plug IP set for this keg"})
+    end
+  end
+
   post "api/kegs/:id/display-mode" do
     keg_id = conn.params["id"]
 

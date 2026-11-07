@@ -14,6 +14,7 @@ defmodule OpenPlaatoKeg.Supervisor do
         ws_registry_spec(),
         keg_socket_registry_spec(),
         tcp_listener_spec(),
+        OpenPlaatoKeg.PlugWatchdog,
         http_router_spec()
       ]
       |> Enum.reject(&is_nil/1)

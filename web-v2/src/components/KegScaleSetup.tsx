@@ -9,6 +9,7 @@ type WideKeg = Keg & {
   max_keg_volume?: string; known_weight?: string; keg_mode_c02_beer?: string
   sensitivity?: string; my_display_mode?: string; my_co2_capacity?: string
   chip_temperature_string?: string; leak_detection?: string
+  my_plug_ip?: string; my_plug_cycled_at?: string
 }
 
 const D = {
@@ -31,6 +32,9 @@ const D = {
     danger: 'Remove scale', dangerHelp: 'Removes the saved record (auth token and local settings). The scale can reconnect later.',
     del: 'Forget scale', delConfirm: 'Forget this saved scale and all its local settings?\n\n{id}',
     ok: 'Done', enter: 'Enter a value', err: 'Error',
+    plug: 'Smart plug (auto restart)',
+    plugHelp: 'IP address of the Shelly plug this keg is plugged into. If the keg is silent for 15 minutes, it is switched off for 10 seconds and back on.',
+    plugTest: 'Test restart', plugTestConfirm: 'Switch the keg off for 10 seconds now?', plugLast: 'Last restart', save: 'Save',
   },
   da: {
     title: 'Vægopsætning', units: 'Enheder & visning', unitSystem: 'Enhedssystem', metric: 'Metrisk', us: 'US',
@@ -51,6 +55,9 @@ const D = {
     danger: 'Fjern vægt', dangerHelp: 'Fjerner den gemte post (auth-token og lokale indstillinger). Vægten kan forbinde igen senere.',
     del: 'Glem vægt', delConfirm: 'Glem denne gemte vægt og alle lokale indstillinger?\n\n{id}',
     ok: 'Udført', enter: 'Indtast en værdi', err: 'Fejl',
+    plug: 'Smart-stik (automatisk genstart)',
+    plugHelp: 'IP-adressen på det Shelly-stik fustagen sidder i. Er fustagen tavs i 15 minutter, slukkes den i 10 sekunder og tændes igen.',
+    plugTest: 'Test genstart', plugTestConfirm: 'Sluk fustagen i 10 sekunder nu?', plugLast: 'Sidste genstart', save: 'Gem',
   },
 }
 
@@ -71,6 +78,7 @@ export function KegScaleSetup({ keg, disabled, onDeleted }: {
   const [pick, setPick] = useState<Record<string, string>>({})
   const [fws, setFws] = useState<{ name: string; path: string; size: number }[] | null>(null)
   const [fw, setFw] = useState('')
+  const [plugIp, setPlugIp] = useState(k.my_plug_ip ?? '')
 
   useEffect(() => {
     if (!open || fws || disabled) return
@@ -197,6 +205,23 @@ export function KegScaleSetup({ keg, disabled, onDeleted }: {
           <h4 className="font-serif text-base font-semibold">{s.mode}</h4>
           <Pin field="mode" path="keg-mode" opts={[['beer', '1', s.beer], ['co2', '2', s.co2]]} />
           {cur.mode === '2' && NumRow({ label: s.co2Cap, field: "co2", path: "co2-capacity", unit: isUS ? 'lbs' : 'kg' })}
+        </section>
+
+        <section className="space-y-2">
+          <h4 className="font-serif text-base font-semibold">{s.plug}</h4>
+          <p className="text-xs text-text-muted">{s.plugHelp}</p>
+          <div className="flex items-center gap-2">
+            <input value={plugIp} disabled={off} placeholder="192.168.1.60" inputMode="decimal"
+              onChange={(e) => setPlugIp(e.target.value)} className="input-pers flex-1 disabled:opacity-50" />
+            <button disabled={off} onClick={() => void run(() => post('plug', { value: plugIp.trim() }))}
+              className="btn-primary-pers py-1.5 text-xs disabled:opacity-50">{s.save}</button>
+            <button disabled={off || !k.my_plug_ip}
+              onClick={() => { if (confirm(s.plugTestConfirm)) void run(() => post('plug/cycle')) }}
+              className="btn-pers py-1.5 text-xs disabled:opacity-50">{s.plugTest}</button>
+          </div>
+          {k.my_plug_cycled_at && (
+            <p className="text-xs text-text-muted">{s.plugLast}: {new Date(Number(k.my_plug_cycled_at)).toLocaleString()}</p>
+          )}
         </section>
 
         <section className="space-y-1 text-xs text-text-muted">
