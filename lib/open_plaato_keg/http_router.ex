@@ -1381,6 +1381,13 @@ defmodule OpenPlaatoKeg.HttpRouter do
     |> send_resp(200, csv)
   end
 
+  # Connection history: connects, drops and plug restarts (newest first).
+  get "api/kegs/:id/events" do
+    days = String.to_integer(conn.query_params["days"] || "7")
+    since = System.system_time(:millisecond) - days * 86_400_000
+    json_response(conn, 200, DataLog.events(conn.params["id"], since))
+  end
+
   get "api/kegs/:id/log" do
     id = conn.params["id"]
     range = conn.query_params["range"] || "24h"

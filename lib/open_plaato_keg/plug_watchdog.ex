@@ -38,7 +38,10 @@ defmodule OpenPlaatoKeg.PlugWatchdog do
 
   defp check(id) do
     keg = KegData.get(id)
-    if due?(keg, now()), do: cycle(id, keg[:my_plug_ip], "silent since #{keg[:last_seen]}")
+    if due?(keg, now()) do
+      mins = div(now() - String.to_integer(keg[:last_seen]), 60_000)
+      cycle(id, keg[:my_plug_ip], "automatic: silent for #{mins} min")
+    end
   end
 
   @doc false
@@ -58,15 +61,20 @@ defmodule OpenPlaatoKeg.PlugWatchdog do
     Logger.warning("Keg #{id}: power-cycling plug #{ip} (#{reason})")
     KegData.publish(id, [{:my_plug_cycled_at, to_string(now())}])
 
-    case Req.get("http://#{ip}/rpc/Switch.Set",
-           params: [id: 0, on: false, toggle_after: 10],
-           receive_timeout: 5_000,
-           retry: false
-         ) do
-      {:ok, %{status: 200}} -> :ok
-      {:ok, %{status: s, body: b}} -> Logger.error("Plug #{ip}: HTTP #{s} #{inspect(b)}") && {:error, "HTTP #{s}"}
-      {:error, e} -> Logger.error("Plug #{ip}: #{Exception.message(e)}") && {:error, Exception.message(e)}
-    end
+    result =
+      case Req.get("http://#{ip}/rpc/Switch.Set",
+             params: [id: 0, on: false, toggle_after: 10],
+             receive_timeout: 5_000,
+             retry: false
+           ) do
+        {:ok, %{status: 200}} -> :ok
+        {:ok, %{status: s, body: b}} -> Logger.error("Plug #{ip}: HTTP #{s} #{inspect(b)}") && {:error, "HTTP #{s}"}
+        {:error, e} -> Logger.error("Plug #{ip}: #{Exception.message(e)}") && {:error, Exception.message(e)}
+      end
+
+    detail = if result == :ok, do: reason, else: "#{reason}, FAILED: #{elem(result, 1)}"
+    OpenPlaatoKeg.Models.DataLog.event(id, "restart", detail)
+    result
   end
 
   defp now, do: System.system_time(:millisecond)

@@ -3,6 +3,8 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
   require Logger
 
   alias OpenPlaatoKeg.BlynkProtocol
+  alias OpenPlaatoKeg.Models.DataLog
+  alias OpenPlaatoKeg.Models.KegData
   alias OpenPlaatoKeg.PlaatoData
   alias OpenPlaatoKeg.PlaatoProtocol
 
@@ -18,15 +20,25 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
   # idle connection (read timeout) or the socket errored, vs the keg closing.
   def handle_timeout(_socket, state) do
     Logger.warning("Keg #{state.keg_id || "(unidentified)"} read timeout: no data for the timeout period (connection age #{age(state)}s); closing")
+    keg_event(state.keg_id, "disconnected", "server timeout after #{age(state)}s")
     {:close, state}
   end
 
   def handle_error(reason, _socket, state) do
     Logger.warning("Keg #{state.keg_id || "(unidentified)"} socket error after #{age(state)}s: #{inspect(reason)}")
+    keg_event(state.keg_id, "disconnected", "connection lost (#{inspect(reason)}) after #{age(state)}s")
     {:close, state}
   end
 
   defp age(%{connected_at: t}), do: System.monotonic_time(:second) - t
+
+  # Connection history for the keg's log panel. Airlocks reconnect every wake-up,
+  # so only kegs are recorded.
+  defp keg_event(nil, _type, _detail), do: :ok
+
+  defp keg_event(id, type, detail) do
+    if id in KegData.devices(), do: DataLog.event(id, type, detail), else: :ok
+  end
 
   def handle_data(data, socket, state) do
     # Acknowledge Blynk-style packets, echoing the msg_id from the incoming frame.
@@ -54,6 +66,7 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
   def handle_close(_socket, state) do
     if state.keg_id do
       Logger.info("Keg #{state.keg_id} disconnected after #{age(state)}s")
+      keg_event(state.keg_id, "disconnected", "closed by keg after #{age(state)}s")
 
       # Unregister the socket (only affects this process's registration)
       Registry.unregister(OpenPlaatoKeg.KegSocketRegistry, state.keg_id)
@@ -82,6 +95,7 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
 
         case Registry.register(OpenPlaatoKeg.KegSocketRegistry, keg_id, socket) do
           {:ok, _} ->
+            keg_event(keg_id, "connected", "")
             %{state | keg_id: keg_id}
 
           {:error, {:already_registered, old_pid}} ->
@@ -96,6 +110,7 @@ defmodule OpenPlaatoKeg.KegConnectionHandler do
 
             case Registry.register(OpenPlaatoKeg.KegSocketRegistry, keg_id, socket) do
               {:ok, _} ->
+                keg_event(keg_id, "connected", "old connection had silently died")
                 %{state | keg_id: keg_id}
 
               {:error, reason} ->

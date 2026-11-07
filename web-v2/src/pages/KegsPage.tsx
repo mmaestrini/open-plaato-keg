@@ -3,6 +3,7 @@ import { api, fmt1, openWS, Keg, Tap } from '../lib/api'
 import { useI18n, Key } from '../lib/i18n'
 import { useDemoMode, mockKeg } from '../lib/demo'
 import { KegScaleSetup } from '../components/KegScaleSetup'
+import { ConnectionLog } from '../components/ConnectionLog'
 
 // ─────────────────────────────────────────────────────────────────────
 // Kegs page — live hardware data + editable batch details per keg.
@@ -199,6 +200,7 @@ function KegCard({ keg, tap, index, isDemoData, isFirst, isLast, onMove, onDelet
   }
 
   const displayName = keg.my_label || tap?.name || t('keg_unnamed', { n: index + 1 })
+  const [showLog, setShowLog] = useState(false)
 
   return (
     <div className="card-pers relative overflow-hidden">
@@ -254,11 +256,15 @@ function KegCard({ keg, tap, index, isDemoData, isFirst, isLast, onMove, onDelet
         <p className="font-mono text-[0.65rem] text-text-dim">{keg.id.slice(0, 12)}…</p>
         {!isDemoData && (
           <span className="flex gap-1">
+            <button onClick={() => setShowLog((v) => !v)} aria-label="Connection log" title="Connection log"
+              className={`${showLog ? 'btn-primary-pers' : 'btn-pers'} px-2 py-0.5 text-xs`}>⇅</button>
             <button onClick={() => onMove(-1)} disabled={isFirst} aria-label="Move up" className="btn-pers px-2 py-0.5 text-xs disabled:opacity-30">↑</button>
             <button onClick={() => onMove(1)} disabled={isLast} aria-label="Move down" className="btn-pers px-2 py-0.5 text-xs disabled:opacity-30">↓</button>
           </span>
         )}
       </div>
+
+      {showLog && <ConnectionLog kegId={keg.id} />}
 
       {/* Fill bar */}
       <div className="mt-4">

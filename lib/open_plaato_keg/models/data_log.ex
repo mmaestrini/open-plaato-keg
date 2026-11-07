@@ -86,6 +86,27 @@ defmodule OpenPlaatoKeg.Models.DataLog do
   end
 
   @doc """
+  Record a keg connection event (`"connected"`, `"disconnected"`, `"restart"`)
+  with a short detail text. Keyed in milliseconds so a disconnect and the
+  reconnect in the same second are both kept.
+  """
+  def event(keg_id, type, detail \\ "") do
+    now = System.system_time(:millisecond)
+    :dets.insert(@table, {{:keg_event, keg_id, now}, %{"type" => type, "detail" => detail}})
+    :ok
+  end
+
+  @doc "Events for a keg since `since_ms`, newest first, each with a `\"at\"` (ms) key."
+  def events(keg_id, since_ms) do
+    spec = [{{{:keg_event, keg_id, :"$1"}, :"$2"}, [{:>=, :"$1", since_ms}], [{{:"$1", :"$2"}}]}]
+
+    case :dets.select(@table, spec) do
+      {:error, _} -> []
+      rows -> rows |> Enum.sort_by(&elem(&1, 0), :desc) |> Enum.map(fn {at, e} -> Map.put(e, "at", at) end)
+    end
+  end
+
+  @doc """
   Delete all log entries older than `days_to_keep` days (default 90).
   """
   def prune(days_to_keep \\ 90) do
