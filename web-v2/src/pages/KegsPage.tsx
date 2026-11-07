@@ -257,7 +257,11 @@ function KegCard({ keg, tap, index, isDemoData, isFirst, isLast, onMove, onDelet
         {!isDemoData && (
           <span className="flex gap-1">
             <button onClick={() => setShowLog((v) => !v)} aria-label="Connection log" title="Connection log"
-              className={`${showLog ? 'btn-primary-pers' : 'btn-pers'} px-2 py-0.5 text-xs`}>⇅</button>
+              className={`${showLog ? 'btn-primary-pers' : 'btn-pers'} px-2 py-0.5 text-xs`}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="inline-block align-[-2px]">
+                <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><path d="M14 3v6h6" /><path d="M8 13h8M8 17h6" />
+              </svg>
+            </button>
             <button onClick={() => onMove(-1)} disabled={isFirst} aria-label="Move up" className="btn-pers px-2 py-0.5 text-xs disabled:opacity-30">↑</button>
             <button onClick={() => onMove(1)} disabled={isLast} aria-label="Move down" className="btn-pers px-2 py-0.5 text-xs disabled:opacity-30">↓</button>
           </span>
